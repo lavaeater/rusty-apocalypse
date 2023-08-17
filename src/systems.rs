@@ -89,6 +89,7 @@ pub fn keyboard_input(
     let mut dir_force = vec2(0.0, 0.0);
     if let Ok(mut external_force) = query.get_single_mut() {
         for ev in key_evr.iter() {
+            println!("{:?}:{:?}", ev.state, ev.key_code);
             match ev.state {
                 ButtonState::Pressed => match ev.key_code {
                     Some(KeyCode::A) => {
@@ -122,6 +123,10 @@ pub fn keyboard_input(
                 }
             }
         }
-        external_force.apply_force(dir_force);
+        if dir_force != Vec2::ZERO {
+            println!("{:?}", dir_force);
+            external_force.apply_force(dir_force);
+            println!("{:?}", external_force);
+        }
     }
 }
