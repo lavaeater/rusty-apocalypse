@@ -28,6 +28,10 @@ pub struct PlayerStartBundle {
 #[derive(Component)]
 pub struct Player {}
 
+
+#[derive(Component)]
+pub struct GameCam {}
+
 #[derive(Component)]
 pub struct CameraFollow {}
 
