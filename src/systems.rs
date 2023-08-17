@@ -1,5 +1,5 @@
-use crate::components::{CameraFollow, Player, GameCam};
-use crate::{Layer, METERS_PER_PIXEL, PIXELS_PER_METER};
+use crate::components::{CameraFollow, Player, GameCam, DirectionControl};
+use crate::{CAMERA_SCALE, Layer, METERS_PER_PIXEL, PIXELS_PER_METER};
 use bevy::asset::{AssetServer};
 use bevy::input::keyboard::KeyboardInput;
 use bevy::math::{Rect, Vec2, Vec3};
@@ -10,7 +10,30 @@ use bevy::prelude::{
 use bevy::render::camera::ScalingMode;
 use bevy_xpbd_2d::components::{
     Collider, CollisionLayers, ExternalForce, Position, RigidBody};
-use bevy_xpbd_2d::prelude::{Friction, Restitution};
+use bevy_xpbd_2d::prelude::{LinearDamping };
+
+pub fn load_background(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+) {
+    commands
+        .spawn((
+            SpriteBundle {
+                transform: Transform::from_xyz(
+                    0.0,
+                    0.0,
+                    0.0,
+                )
+                    .with_scale(Vec3::new(
+                        METERS_PER_PIXEL * 10.0,
+                        METERS_PER_PIXEL * 10.0,
+                        1.0,
+                    )),
+                texture: asset_server.load("background/background.png"),
+                ..default()
+            },
+        ));
+}
 
 pub fn spawn_player(
     mut commands: Commands,
@@ -18,6 +41,7 @@ pub fn spawn_player(
     commands
         .spawn((
             CameraFollow {},
+            DirectionControl::default(),
             SpriteBundle {
                 transform: Transform::from_xyz(
                     0.0,
@@ -34,8 +58,7 @@ pub fn spawn_player(
             },
             Player {},
             RigidBody::Dynamic,
-            Friction::default(),
-            Restitution::default(),
+            LinearDamping(5.0),
             Position::from(Vec2 {
                 x: 0.0,
                 y: 0.0,
@@ -50,7 +73,7 @@ pub fn spawn_camera(mut commands: Commands) {
     commands.spawn((
         Camera2dBundle {
             projection: OrthographicProjection {
-                scale: METERS_PER_PIXEL * 2.0,
+                scale: CAMERA_SCALE,
                 near: 0.0,
                 far: 1000.0,
                 viewport_origin: Vec2::new(0.5, 0.5),
@@ -79,54 +102,55 @@ pub fn camera_follow(
     camera_transform.translation = camera_transform.translation.lerp(target, 0.5);
 }
 
+pub fn player_control(
+    mut query: Query<(&mut ExternalForce, &DirectionControl), With<Player>>
+) {
+    if let Ok((mut external_force, direction_control)) = query.get_single_mut() {
+        external_force.apply_force(direction_control.direction * direction_control.force_scale);
+    }
+}
+
 pub fn keyboard_input(
     mut key_evr: EventReader<KeyboardInput>,
-    mut query: Query<&mut ExternalForce, With<Player>>,
+    mut query: Query<&mut DirectionControl, With<Player>>,
 ) {
     use bevy::input::ButtonState;
-    use bevy::math::vec2;
     use bevy::prelude::KeyCode;
-    let mut dir_force = vec2(0.0, 0.0);
-    if let Ok(mut external_force) = query.get_single_mut() {
+    if let Ok(mut direction_control) = query.get_single_mut() {
         for ev in key_evr.iter() {
-            println!("{:?}:{:?}", ev.state, ev.key_code);
+            // println!("{:?}:{:?}", ev.state, ev.key_code);
             match ev.state {
                 ButtonState::Pressed => match ev.key_code {
                     Some(KeyCode::A) => {
-                        dir_force.x -= 5.0;
+                        direction_control.direction.x = -5.0;
                     }
                     Some(KeyCode::D) => {
-                        dir_force.x += 5.0;
+                        direction_control.direction.x = 5.0;
                     }
                     Some(KeyCode::W) => {
-                        dir_force.y += 5.0;
+                        direction_control.direction.y = 5.0;
                     }
                     Some(KeyCode::S) => {
-                        dir_force.y -= 5.0;
+                        direction_control.direction.y = -5.0;
                     }
                     _ => {}
                 },
                 ButtonState::Released => match ev.key_code {
                     Some(KeyCode::A) => {
-                        dir_force.x = 0.0;
+                        direction_control.direction.x = 0.0;
                     }
                     Some(KeyCode::D) => {
-                        dir_force.x = 0.0;
+                        direction_control.direction.x = 0.0;
                     }
                     Some(KeyCode::W) => {
-                        dir_force.y = 0.0;
+                        direction_control.direction.y = 0.0;
                     }
                     Some(KeyCode::S) => {
-                        dir_force.y = 0.0;
+                        direction_control.direction.y = 0.0;
                     }
                     _ => {}
                 }
             }
-        }
-        if dir_force != Vec2::ZERO {
-            println!("{:?}", dir_force);
-            external_force.apply_force(dir_force);
-            println!("{:?}", external_force);
         }
     }
 }

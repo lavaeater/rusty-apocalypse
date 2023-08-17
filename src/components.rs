@@ -1,5 +1,6 @@
 use bevy::prelude::{Bundle, Component, SpriteSheetBundle};
 use bevy_ecs_ldtk::{LdtkEntity, LdtkIntCell};
+use bevy_xpbd_2d::math::Vector2;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Default, Component)]
 pub struct Wall;
@@ -27,6 +28,21 @@ pub struct PlayerStartBundle {
 
 #[derive(Component)]
 pub struct Player {}
+
+#[derive(Copy, Clone, Debug, Component)]
+pub struct DirectionControl {
+    pub direction: Vector2,
+    pub force_scale: f32,
+}
+
+impl Default for DirectionControl {
+    fn default() -> Self {
+        Self {
+            direction: Vector2::ZERO,
+            force_scale: 10.0,
+        }
+    }
+}
 
 
 #[derive(Component)]

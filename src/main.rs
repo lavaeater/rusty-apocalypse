@@ -8,6 +8,7 @@ mod systems;
 
 const PIXELS_PER_METER: f32 = 16.0;
 const METERS_PER_PIXEL: f32 = 1.0 / PIXELS_PER_METER;
+const CAMERA_SCALE: f32 = 1.0;
 
 fn main() {
     App::new()
@@ -16,6 +17,7 @@ fn main() {
         .add_plugins(PhysicsPlugins::default())
         .insert_resource(Gravity(Vec2::ZERO))
         .add_plugins(WorldInspectorPlugin::new())
+        .add_systems(Startup, load_background)
         .add_systems(Startup, spawn_camera)
         .add_systems(Startup, spawn_player)
         .insert_resource(GizmoConfig {
@@ -24,6 +26,7 @@ fn main() {
         })
         .add_systems(Update, camera_follow)
         .add_systems(Update, keyboard_input)
+        .add_systems(Update, player_control)
         .run();
 }
 
