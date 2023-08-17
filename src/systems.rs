@@ -27,8 +27,8 @@ pub fn spawn_player(
                         1.0,
                     )
                     .with_scale(Vec3::new(
-                        METERS_PER_PIXEL,
-                        METERS_PER_PIXEL,
+                        10.0,
+                        10.0,
                         1.0,
                     )),
                     texture: asset_server.load("sprites/person.png"),
@@ -41,7 +41,7 @@ pub fn spawn_player(
                     y: y * PIXELS_PER_METER,
                 }),
                 ExternalForce::default().with_persistence(false),
-                Collider::cuboid(16.0* METERS_PER_PIXEL, 8.0 * METERS_PER_PIXEL),
+                Collider::cuboid(16.0 * METERS_PER_PIXEL, 8.0 * METERS_PER_PIXEL),
                 CollisionLayers::new([Layer::Player], [Layer::Walls, Layer::Water]),
             ));
 }
@@ -50,7 +50,7 @@ pub fn spawn_camera(mut commands: Commands) {
     commands.spawn((
         Camera2dBundle {
             projection: OrthographicProjection {
-                scale: METERS_PER_PIXEL * 2.0,
+                scale: METERS_PER_PIXEL * 10.0,
                 near: 0.0,
                 far: 1000.0,
                 viewport_origin: Vec2::new(0.5, 0.5),
