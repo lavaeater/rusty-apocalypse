@@ -14,9 +14,10 @@ fn main() {
         .insert_resource(Msaa::Sample4)
         .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
         .add_plugins(PhysicsPlugins::default())
+        .insert_resource(Gravity(Vec2::ZERO))
         .add_plugins(WorldInspectorPlugin::new())
         .add_systems(Startup, spawn_camera)
-        .add_systems(Update, spawn_player)
+        .add_systems(Startup, spawn_player)
         .insert_resource(GizmoConfig {
             depth_bias: -1.0,
             ..default()
