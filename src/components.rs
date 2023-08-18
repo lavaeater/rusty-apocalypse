@@ -29,9 +29,14 @@ pub struct PlayerStartBundle {
 #[derive(Component)]
 pub struct Player {}
 
+#[derive(Component)]
+pub struct AimLine {}
+
 #[derive(Copy, Clone, Debug, Component)]
 pub struct DirectionControl {
     pub direction: Vector2,
+    pub aim_direction: Vector2,
+    pub mouse_position: Vector2,
     pub force_scale: f32,
 }
 
@@ -39,6 +44,8 @@ impl Default for DirectionControl {
     fn default() -> Self {
         Self {
             direction: Vector2::ZERO,
+            aim_direction: Vector2::Y,
+            mouse_position: Vector2::ZERO,
             force_scale: 10.0,
         }
     }

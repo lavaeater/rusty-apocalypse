@@ -1,14 +1,19 @@
-use crate::components::{CameraFollow, Player, GameCam, DirectionControl};
+use crate::components::{CameraFollow, Player, GameCam, DirectionControl, AimLine};
 use crate::{CAMERA_SCALE, Layer, METERS_PER_PIXEL, PIXELS_PER_METER};
 use bevy::asset::{AssetServer};
 use bevy::input::keyboard::KeyboardInput;
 use bevy::math::{Rect, Vec2, Vec3};
-use bevy::prelude::{default, Camera2dBundle, Commands, EventReader, OrthographicProjection, Query, Res, SpriteBundle, Transform, With, Without, Camera, GlobalTransform};
-use bevy::render::camera::{RenderTarget, ScalingMode};
+use bevy::prelude::{default, Camera2dBundle, Commands, EventReader, OrthographicProjection, Query, Res, SpriteBundle, Transform, With, Without, Camera, GlobalTransform, Color};
+use bevy::render::camera::{ScalingMode};
 use bevy_xpbd_2d::components::{
     Collider, CollisionLayers, ExternalForce, Position, RigidBody};
-use bevy_xpbd_2d::prelude::{LinearDamping };
+use bevy_xpbd_2d::prelude::{LinearDamping};
 use bevy::window::{PrimaryWindow, Window};
+use bevy_prototype_lyon::draw::{Fill, Stroke};
+use bevy_prototype_lyon::entity::{Path, ShapeBundle};
+use bevy_prototype_lyon::geometry::GeometryBuilder;
+use bevy_prototype_lyon::path::ShapePath;
+use bevy_prototype_lyon::shapes;
 
 pub fn load_background(
     mut commands: Commands,
@@ -153,43 +158,45 @@ pub fn keyboard_input(
     }
 }
 
-pub fn cursor_position(
-    q_windows: Query<&Window, With<PrimaryWindow>>,
-) {
-    // Games typically only have one window (the primary window)
-    if let Some(position) = q_windows.single().cursor_position() {
-        println!("Cursor is inside the primary window, at {:?}", position);
-    } else {
-        println!("Cursor is not in the game window.");
-    }
-}
-
-pub fn my_cursor_system(
+pub fn mouse_position(
+    mut q_direction: Query<&mut DirectionControl, With<Player>>,
     // need to get window dimensions
     q_windows: Query<&Window, With<PrimaryWindow>>,
     // query to get camera transform
     camera_q: Query<(&Camera, &GlobalTransform), With<GameCam>>,
 ) {
-    if let Some(position) = q_windows.single().cursor_position() {
-        
-    }
-    // get the camera info and transform
-    // assuming there is exactly one main camera entity, so query::single() is OK
     let (camera, camera_transform) = camera_q.single();
-
-    // get the window that the camera is displaying to (or the primary window)
-    let window = if let RenderTarget::Window(id) = camera.target {
-        windows.get(id).unwrap()
-    } else {
-        windows.get_primary().unwrap()
-    };
-
-    // check if the cursor is inside the window and get its position
-    // then, ask bevy to convert into world coordinates, and truncate to discard Z
-    if let Some(world_position) = window.cursor_position()
-        .and_then(|cursor| camera.viewport_to_world(camera_transform, cursor))
-        .map(|ray| ray.origin.truncate())
-    {
-        eprintln!("World coords: {}/{}", world_position.x, world_position.y);
+    let mut direction_control = q_direction.single_mut();
+    if let Some(position) = q_windows
+        .single()
+        .cursor_position()
+        .and_then(|cursor|
+            camera.viewport_to_world(camera_transform, cursor))
+        .map(|ray| ray.origin.truncate()) {
+        direction_control.mouse_position = position;
     }
+}
+
+pub fn add_mouse_aim_line(mut commands: Commands) {
+    let line = shapes::Line(Vec2::new(0.0, 0.0), Vec2::new(199.0, 200.0));
+    commands.spawn((
+        ShapeBundle {
+            path: GeometryBuilder::build_as(&line),
+            transform: Transform::from_xyz(0.0, 0.0, 10.0),
+            ..default()
+        },
+        Stroke::new(Color::RED, 0.05),
+        Fill::color(Color::RED),
+        AimLine {},
+    ));
+}
+
+pub fn draw_mouse_aim(
+    q_mouse_aim: Query<(&Transform, &DirectionControl), With<Player>>,
+    mut query: Query<&mut Path, With<AimLine>>
+) {
+    let (transform, direction_control) = q_mouse_aim.single();
+    let mut path = query.single_mut();
+    let line = shapes::Line(Vec2::new(transform.translation.x, transform.translation.y), direction_control.mouse_position);
+    *path = ShapePath::build_as(&line)
 }
