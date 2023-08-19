@@ -31,7 +31,8 @@ fn main() {
         .add_systems(Update, keyboard_input)
         .add_systems(Update, mouse_position)
         .add_systems(Update, draw_mouse_aim)
-        .add_systems(Update, player_control)
+        .add_systems(Update, mouse_look)
+        .add_systems(Update, linear_velocity_player_control)
         .run();
 }
 
