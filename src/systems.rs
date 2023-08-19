@@ -213,7 +213,7 @@ pub fn mouse_look(
     mut query: Query<(&mut Rotation, &mut DirectionControl, &Transform), With<Player>>
 ) {
     if let Ok((mut rotation, mut direction_control, transform)) = query.get_single_mut() {
-        direction_control.aim_direction = direction_control.mouse_position - Vec2::new(transform.translation.x, transform.translation.y);
+        direction_control.aim_direction = (direction_control.mouse_position - Vec2::new(transform.translation.x, transform.translation.y)).normalize_or_zero();
         let mouse_aim_rotation = Rotation::from_radians(direction_control.aim_direction.angle_between(Vec2::Y));
         rotation.mul(mouse_aim_rotation);
     }

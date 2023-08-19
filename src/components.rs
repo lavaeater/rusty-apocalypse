@@ -1,4 +1,4 @@
-use bevy::prelude::{Bundle, Component, SpriteSheetBundle};
+use bevy::prelude::{Bundle, Component, Reflect, SpriteSheetBundle};
 use bevy_ecs_ldtk::{LdtkEntity, LdtkIntCell};
 use bevy_xpbd_2d::math::Vector2;
 
@@ -32,6 +32,7 @@ pub struct Player {}
 #[derive(Component)]
 pub struct AimLine {}
 
+#[derive(Reflect)]
 #[derive(Copy, Clone, Debug, Component)]
 pub struct DirectionControl {
     pub direction: Vector2,

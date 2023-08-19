@@ -3,6 +3,7 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_prototype_lyon::plugin::ShapePlugin;
 use bevy_xpbd_2d::prelude::*;
 use systems::*;
+use crate::components::DirectionControl;
 
 mod components;
 mod systems;
@@ -18,6 +19,7 @@ fn main() {
         .add_plugins(PhysicsPlugins::default())
         .add_plugins(ShapePlugin)
         .insert_resource(Gravity(Vec2::ZERO))
+        .register_type::<DirectionControl>()
         .add_plugins(WorldInspectorPlugin::new())
         .add_systems(Startup, load_background)
         .add_systems(Startup, spawn_camera)
