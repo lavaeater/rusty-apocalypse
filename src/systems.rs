@@ -118,7 +118,8 @@ pub fn camera_follow(
     camera_transform.translation = camera_transform.translation.lerp(target, 0.5);
 }
 
-pub fn external_force_player_control(
+#[allow(dead_code)]
+fn external_force_player_control(
     mut query: Query<(&mut ExternalForce, &DirectionControl), With<Player>>
 ) {
     if let Ok((mut external_force, direction_control)) = query.get_single_mut() {
