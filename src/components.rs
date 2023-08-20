@@ -1,6 +1,7 @@
 use bevy::prelude::{Bundle, Component, Reflect, SpriteSheetBundle};
 use bevy_ecs_ldtk::{LdtkEntity, LdtkIntCell};
 use bevy_xpbd_2d::math::Vector2;
+use bevy_xpbd_2d::prelude::Rotation;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Default, Component)]
 pub struct Wall;
@@ -37,6 +38,7 @@ pub struct AimLine {}
 pub struct DirectionControl {
     pub direction: Vector2,
     pub aim_direction: Vector2,
+    pub aim_rotation: Rotation,
     pub mouse_position: Vector2,
     pub force_scale: f32,
 }
@@ -46,6 +48,7 @@ impl Default for DirectionControl {
         Self {
             direction: Vector2::ZERO,
             aim_direction: Vector2::Y,
+            aim_rotation: Rotation::default(),
             mouse_position: Vector2::ZERO,
             force_scale: 10.0,
         }

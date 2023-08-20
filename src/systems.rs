@@ -1,3 +1,4 @@
+use std::ops::AddAssign;
 use crate::components::{CameraFollow, Player, GameCam, DirectionControl, AimLine};
 use crate::{CAMERA_SCALE, Layer, METERS_PER_PIXEL, PIXELS_PER_METER};
 use bevy::asset::{AssetServer};
@@ -214,7 +215,8 @@ pub fn mouse_look(
 ) {
     if let Ok((mut rotation, mut direction_control, transform)) = query.get_single_mut() {
         direction_control.aim_direction = (direction_control.mouse_position - Vec2::new(transform.translation.x, transform.translation.y)).normalize_or_zero();
-        let mouse_aim_rotation = Rotation::from_radians(direction_control.aim_direction.angle_between(Vec2::Y));
-        rotation.mul(mouse_aim_rotation);
+        direction_control.aim_rotation = Rotation::from_radians(direction_control.aim_direction.angle_between(Vec2::Y));
+        let to_add = Rotation::from_radians(direction_control.aim_rotation.as_radians() - rotation.as_radians());
+        rotation.add_assign(to_add);
     }
 }
