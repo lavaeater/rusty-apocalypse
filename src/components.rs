@@ -50,7 +50,7 @@ impl Default for DirectionControl {
         Self {
             direction: Vector2::ZERO,
             aim_direction: Vector2::Y,
-            up: Vector2::X,
+            up: Vector2::Y,
             aim_rotation: Rotation::default(),
             aim_degrees: 0.0,
             mouse_position: Vector2::ZERO,

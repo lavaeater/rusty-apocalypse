@@ -234,16 +234,17 @@ pub fn mouse_look(
                   mut rotation,
                   mut direction_control,
                   transform)) = query.get_single_mut() {
-        let mut target_up = Vec2::new(transform.up().x, transform.up().y);
+        direction_control.up = Vec2::new(transform.up().x, transform.up().y);
 
         direction_control.aim_direction =
             (direction_control.mouse_position - Vec2::new(
                 transform.translation.x,
                 transform.translation.y)
             )
-                .normalize_or_zero();
+                .try_normalize()
+                .unwrap_or(Vec2::X);
 
-        target_up = target_up.lerp(direction_control.aim_direction, 0.5);
+        let target_up = direction_control.up.lerp(direction_control.aim_direction, 0.5);
         let to_add = Rotation::from_radians(
             target_up
                 .angle_between(
@@ -251,6 +252,8 @@ pub fn mouse_look(
                         .aim_direction
                 )
         );
+        direction_control.aim_rotation = to_add;
+        direction_control.aim_degrees = to_add.as_degrees();
 
         rotation.add_assign(to_add);
     }
