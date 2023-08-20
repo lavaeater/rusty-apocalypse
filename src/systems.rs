@@ -4,11 +4,25 @@ use crate::{CAMERA_SCALE, Layer, METERS_PER_PIXEL, PIXELS_PER_METER};
 use bevy::asset::{AssetServer};
 use bevy::input::keyboard::KeyboardInput;
 use bevy::math::{Rect, Vec2, Vec3};
-use bevy::prelude::{default, Camera2dBundle, Commands, EventReader, OrthographicProjection, Query, Res, SpriteBundle, Transform, With, Without, Camera, GlobalTransform, Color};
+use bevy::prelude::{
+    default,
+    Camera2dBundle,
+    Commands,
+    EventReader,
+    OrthographicProjection,
+    Query,
+    Res,
+    SpriteBundle,
+    Transform,
+    With,
+    Without,
+    Camera,
+    GlobalTransform,
+    Color};
 use bevy::render::camera::{ScalingMode};
 use bevy_xpbd_2d::components::{
     Collider, CollisionLayers, ExternalForce, Position, RigidBody};
-use bevy_xpbd_2d::prelude::{LinearDamping, LinearVelocity, Rotation};
+use bevy_xpbd_2d::prelude::{LinearVelocity, Rotation};
 use bevy::window::{PrimaryWindow, Window};
 use bevy_prototype_lyon::draw::{Fill, Stroke};
 use bevy_prototype_lyon::entity::{Path, ShapeBundle};
@@ -202,7 +216,7 @@ pub fn add_mouse_aim_line(mut commands: Commands) {
 
 pub fn draw_mouse_aim(
     q_mouse_aim: Query<(&Transform, &DirectionControl), With<Player>>,
-    mut query: Query<&mut Path, With<AimLine>>
+    mut query: Query<&mut Path, With<AimLine>>,
 ) {
     let (transform, direction_control) = q_mouse_aim.single();
     let mut path = query.single_mut();
@@ -211,12 +225,33 @@ pub fn draw_mouse_aim(
 }
 
 pub fn mouse_look(
-    mut query: Query<(&mut Rotation, &mut DirectionControl, &Transform), With<Player>>
+    mut query: Query<(
+        &mut Rotation,
+        &mut DirectionControl,
+        &Transform), With<Player>>,
 ) {
-    if let Ok((mut rotation, mut direction_control, transform)) = query.get_single_mut() {
-        direction_control.aim_direction = (direction_control.mouse_position - Vec2::new(transform.translation.x, transform.translation.y)).normalize_or_zero();
-        direction_control.aim_rotation = Rotation::from_radians(direction_control.aim_direction.angle_between(Vec2::Y));
-        let to_add = Rotation::from_radians(direction_control.aim_rotation.as_radians() - rotation.as_radians());
+    if let Ok((
+                  mut rotation,
+                  mut direction_control,
+                  transform)) = query.get_single_mut() {
+        let mut target_up = Vec2::new(transform.up().x, transform.up().y);
+
+        direction_control.aim_direction =
+            (direction_control.mouse_position - Vec2::new(
+                transform.translation.x,
+                transform.translation.y)
+            )
+                .normalize_or_zero();
+
+        target_up = target_up.lerp(direction_control.aim_direction, 0.5);
+        let to_add = Rotation::from_radians(
+            target_up
+                .angle_between(
+                    direction_control
+                        .aim_direction
+                )
+        );
+
         rotation.add_assign(to_add);
     }
 }

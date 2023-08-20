@@ -38,7 +38,9 @@ pub struct AimLine {}
 pub struct DirectionControl {
     pub direction: Vector2,
     pub aim_direction: Vector2,
+    pub up: Vector2,
     pub aim_rotation: Rotation,
+    pub aim_degrees: f32,
     pub mouse_position: Vector2,
     pub force_scale: f32,
 }
@@ -48,7 +50,9 @@ impl Default for DirectionControl {
         Self {
             direction: Vector2::ZERO,
             aim_direction: Vector2::Y,
+            up: Vector2::X,
             aim_rotation: Rotation::default(),
+            aim_degrees: 0.0,
             mouse_position: Vector2::ZERO,
             force_scale: 10.0,
         }
