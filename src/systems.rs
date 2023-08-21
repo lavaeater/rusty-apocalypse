@@ -29,6 +29,7 @@ use bevy_prototype_lyon::entity::{Path, ShapeBundle};
 use bevy_prototype_lyon::geometry::GeometryBuilder;
 use bevy_prototype_lyon::path::ShapePath;
 use bevy_prototype_lyon::shapes;
+use rand::Rng;
 
 pub fn load_background(
     mut commands: Commands,
@@ -88,16 +89,18 @@ pub fn spawn_player(
 pub fn spawn_boids(
     mut commands: Commands,
     asset_server: Res<AssetServer>) {
-
-    for n in 0..9 {
+    let mut rng = rand::thread_rng();
+    for n in 0..99 {
+        let x = rng.gen_range(-100.0..100.0);
+        let y =rng.gen_range(-100.0..100.0);
         commands
             .spawn((
                 DirectionControl::default(),
                 SpriteBundle {
                     transform: Transform::from_xyz(
-                        0.0,
-                        0.0,
-                        1.0,
+                        x,
+                        y,
+                        2.0,
                     )
                         .with_scale(Vec3::new(
                             METERS_PER_PIXEL,
@@ -107,14 +110,16 @@ pub fn spawn_boids(
                     texture: asset_server.load("sprites/boid.png"),
                     ..default()
                 },
-                Player {},
                 RigidBody::Kinematic,
                 Position::from(Vec2 {
-                    x: 0.0,
-                    y: 0.0,
+                    x,
+                    y,
                 }),
-                Collider::cuboid(16.0 * METERS_PER_PIXEL, 8.0 * METERS_PER_PIXEL),
-                CollisionLayers::new([Layer::Player], [Layer::Walls, Layer::Water]),
+                Collider::triangle(
+                    Vec2::new(0.0, 8.0 * METERS_PER_PIXEL),
+                    Vec2::new(8.0 * METERS_PER_PIXEL, -8.0 * METERS_PER_PIXEL),
+                    Vec2::new(-8.0 * METERS_PER_PIXEL, -8.0 * METERS_PER_PIXEL)),
+                CollisionLayers::new([Layer::Boid], [Layer::Player]),
             ));
     }
 
