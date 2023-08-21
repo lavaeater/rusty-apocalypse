@@ -3,7 +3,7 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_prototype_lyon::plugin::ShapePlugin;
 use bevy_xpbd_2d::prelude::*;
 use systems::*;
-use crate::components::DirectionControl;
+use crate::components::{BoidDirection, BoidStuff, DirectionControl};
 
 mod components;
 mod systems;
@@ -11,7 +11,7 @@ mod systems;
 const PIXELS_PER_METER: f32 = 16.0;
 const METERS_PER_PIXEL: f32 = 1.0 / PIXELS_PER_METER;
 const CAMERA_SCALE: f32 = 1.0;
-
+const FIXED_TIME_STEP: f32 = 1.0/10.0;
 fn main() {
     App::new()
         .insert_resource(Msaa::Sample4)
@@ -19,7 +19,10 @@ fn main() {
         .add_plugins(PhysicsPlugins::default())
         .add_plugins(ShapePlugin)
         .insert_resource(Gravity(Vec2::ZERO))
+        .insert_resource(FixedTime::new_from_secs(FIXED_TIME_STEP))
         .register_type::<DirectionControl>()
+        .register_type::<BoidDirection>()
+        .register_type::<BoidStuff>()
         .add_plugins(WorldInspectorPlugin::new())
         .add_systems(Startup, load_background)
         .add_systems(Startup, spawn_camera)
@@ -35,7 +38,10 @@ fn main() {
         .add_systems(Update, mouse_position)
         .add_systems(Update, draw_mouse_aim)
         .add_systems(Update, mouse_look)
-        .add_systems(Update, linear_velocity_player_control)
+        .add_systems(Update, linear_velocity_control_player)
+        .add_systems(Update, linear_velocity_control_boid)
+        .add_systems(Update, boid_steering)
+        .add_systems(FixedUpdate, boid_flocking)
         .run();
 }
 

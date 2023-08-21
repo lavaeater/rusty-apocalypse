@@ -31,6 +31,45 @@ pub struct PlayerStartBundle {
 pub struct Player {}
 
 #[derive(Component)]
+pub struct Boid {}
+
+#[derive(Reflect)]
+#[derive(Copy, Clone, Debug, Component)]
+pub struct BoidStuff {
+    pub cohesion_boids: i32,
+    pub separation_boids: i32,
+    pub flock_center: Vector2,
+    pub separation_vector: Vector2,
+    pub separation_distance: f32,
+    pub cohesion_distance: f32,
+    pub separation_factor: f32,
+    pub cohesion_factor: f32,
+    pub alignment_direction: Vector2,
+    pub alignment_distance: f32,
+    pub alignment_factor: f32,
+    pub alignment_boids: i32,
+}
+
+impl Default for BoidStuff {
+    fn default() -> Self {
+        Self {
+            cohesion_boids: 0,
+            separation_boids: 0,
+            flock_center: Vector2::ZERO,
+            separation_vector: Vector2::ZERO,
+            separation_distance: 25.0,
+            cohesion_distance: 150.0,
+            separation_factor: 0.5,
+            cohesion_factor: 0.5,
+            alignment_direction: Vector2::ZERO,
+            alignment_distance: 100.0,
+            alignment_factor: 0.7,
+            alignment_boids: 0
+        }
+    }
+}
+
+#[derive(Component)]
 pub struct AimLine {}
 
 #[derive(Reflect)]
@@ -54,6 +93,24 @@ impl Default for DirectionControl {
             aim_rotation: Rotation::default(),
             aim_degrees: 0.0,
             mouse_position: Vector2::ZERO,
+            force_scale: 10.0,
+        }
+    }
+}
+
+#[derive(Reflect)]
+#[derive(Copy, Clone, Debug, Component)]
+pub struct BoidDirection {
+    pub direction: Vector2,
+    pub up: Vector2,
+    pub force_scale: f32,
+}
+
+impl Default for BoidDirection {
+    fn default() -> Self {
+        Self {
+            direction: Vector2::ZERO,
+            up: Vector2::Y,
             force_scale: 10.0,
         }
     }
