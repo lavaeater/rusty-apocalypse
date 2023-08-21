@@ -1,8 +1,9 @@
 use std::ops::{AddAssign};
-use crate::components::{CameraFollow, Player, GameCam, DirectionControl, AimLine, Boid, BoidStuff, BoidDirection};
+use crate::components::{CameraFollow, Player, GameCam, DirectionControl, AimLine, Boid, BoidStuff, BoidDirection, Hungry};
 use crate::{CAMERA_SCALE, Layer, METERS_PER_PIXEL, PIXELS_PER_METER};
 use bevy::asset::{AssetServer};
 use bevy::input::keyboard::KeyboardInput;
+use bevy::log::trace;
 use bevy::math::{Rect, Vec2, Vec3};
 use bevy::prelude::{
     default,
@@ -20,6 +21,7 @@ use bevy::prelude::{
     GlobalTransform,
     Color};
 use bevy::render::camera::{ScalingMode};
+use bevy::time::Time;
 use bevy_xpbd_2d::components::{
     Collider, CollisionLayers, ExternalForce, Position, RigidBody};
 use bevy_xpbd_2d::prelude::{LinearVelocity, Rotation};
@@ -407,5 +409,15 @@ pub fn mouse_look(
         direction_control.aim_degrees = to_add.as_degrees();
 
         rotation.add_assign(to_add);
+    }
+}
+
+pub fn hunger_system(time: Res<Time>, mut hungers: Query<&mut Hungry>) {
+    for mut hungry in &mut hungers {
+        hungry.hunger += hungry.per_second * (time.delta().as_micros() as f32 / 1_000_000.0);
+        if hungry.hunger >= 100.0 {
+            hungry.hunger = 100.0;
+        }
+        trace!("Thirst: {}", hungry.hunger);
     }
 }

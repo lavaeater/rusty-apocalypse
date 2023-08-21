@@ -138,3 +138,15 @@ pub struct IntCell {
     #[bundle()]
     sprite_bundle: SpriteSheetBundle,
 }
+
+#[derive(Component, Debug)]
+pub struct Hungry {
+    pub per_second: f32,
+    pub hunger: f32,
+}
+
+impl Hungry {
+    pub fn new(hunger: f32, per_second: f32) -> Self {
+        Self { hunger, per_second }
+    }
+}
