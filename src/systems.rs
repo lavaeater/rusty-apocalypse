@@ -91,7 +91,7 @@ pub fn spawn_boids(
     mut commands: Commands,
     asset_server: Res<AssetServer>) {
     let mut rng = rand::thread_rng();
-    for _ in 0..300 {
+    for _ in 0..100 {
         let x = rng.gen_range(-250.0..250.0);
         let y = rng.gen_range(-250.0..250.0);
         commands

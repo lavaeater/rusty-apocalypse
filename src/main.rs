@@ -4,6 +4,7 @@ use bevy_prototype_lyon::plugin::ShapePlugin;
 use bevy_xpbd_2d::prelude::*;
 use systems::*;
 use crate::components::{BoidDirection, BoidStuff, DirectionControl};
+use kdtree::KdTree;
 
 mod components;
 mod systems;
