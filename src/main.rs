@@ -24,6 +24,7 @@ fn main() {
         .add_systems(Startup, load_background)
         .add_systems(Startup, spawn_camera)
         .add_systems(Startup, spawn_player)
+        .add_systems(Startup, spawn_boids)
         .add_systems(Startup, add_mouse_aim_line)
         .insert_resource(GizmoConfig {
             depth_bias: -1.0,
