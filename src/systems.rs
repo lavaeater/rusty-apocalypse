@@ -92,7 +92,6 @@ pub fn spawn_boids(
     for n in 0..9 {
         commands
             .spawn((
-                CameraFollow {},
                 DirectionControl::default(),
                 SpriteBundle {
                     transform: Transform::from_xyz(
