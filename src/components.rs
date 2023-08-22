@@ -34,6 +34,7 @@ pub struct PlayerStartBundle {
 
 #[derive(Bundle, Clone)]
 pub struct PlayerBundle {
+    name: AAName,
     camera_follow: CameraFollow,
     direction_control: DirectionControl,
     player: Player,
@@ -48,6 +49,7 @@ pub struct PlayerBundle {
 impl Default for PlayerBundle {
     fn default() -> Self {
         Self {
+            name: AAName("Player".to_string()),
             camera_follow: CameraFollow {},
             direction_control: DirectionControl::default(),
             player: Player {},
@@ -198,6 +200,9 @@ pub struct IntCell {
     #[bundle()]
     sprite_bundle: SpriteSheetBundle,
 }
+
+#[derive(Component, Debug, Reflect, Clone)]
+pub struct AAName(pub String);
 
 #[derive(Component, Debug)]
 pub struct Hunger {

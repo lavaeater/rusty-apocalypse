@@ -1,5 +1,5 @@
 use std::ops::{AddAssign};
-use crate::components::{CameraFollow, Player, GameCam, DirectionControl, AimLine, Boid, BoidStuff, BoidDirection, Hunger, QuadCoord, Hunt, QuadStore, PlayerBundle, Prey, Hungry};
+use crate::components::{CameraFollow, Player, GameCam, DirectionControl, AimLine, Boid, BoidStuff, BoidDirection, Hunger, QuadCoord, Hunt, QuadStore, PlayerBundle, Prey, Hungry, AAName};
 use crate::{CAMERA_SCALE, Layer, METERS_PER_PIXEL, PIXELS_PER_METER};
 use bevy::asset::{AssetServer};
 use bevy::input::keyboard::KeyboardInput;
@@ -75,11 +75,12 @@ pub fn spawn_boids(
     mut commands: Commands,
     asset_server: Res<AssetServer>) {
     let mut rng = rand::thread_rng();
-    for _ in 0..100 {
+    for n in 0..100 {
         let x = rng.gen_range(-250.0..250.0);
         let y = rng.gen_range(-250.0..250.0);
         commands
             .spawn((
+                AAName("Boid ".to_string() + &n.to_string()),
                 Hunger::new(75.0, 2.0),
                 Thinker::build()
                     .label("Hunger Thinker")
@@ -135,6 +136,7 @@ pub fn spawn_boids(
 
 pub fn spawn_camera(mut commands: Commands) {
     commands.spawn((
+        AAName("Camera".to_string()),
         Camera2dBundle {
             projection: OrthographicProjection {
                 scale: CAMERA_SCALE,
