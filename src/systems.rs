@@ -1,27 +1,14 @@
 use std::ops::{AddAssign};
-use crate::components::{CameraFollow, Player, GameCam, DirectionControl, AimLine, Boid, BoidStuff, BoidDirection, Hungry, QuadCoord};
+use crate::components::{CameraFollow, Player, GameCam, DirectionControl, AimLine, Boid, BoidStuff, BoidDirection, Hungry, QuadCoord, Hunt, QuadStore};
 use crate::{CAMERA_SCALE, Layer, METERS_PER_PIXEL, PIXELS_PER_METER};
 use bevy::asset::{AssetServer};
 use bevy::input::keyboard::KeyboardInput;
 use bevy::log::trace;
 use bevy::math::{Rect, Vec2, Vec3};
-use bevy::prelude::{
-    default,
-    Camera2dBundle,
-    Commands,
-    EventReader,
-    OrthographicProjection,
-    Query,
-    Res,
-    SpriteBundle,
-    Transform,
-    With,
-    Without,
-    Camera,
-    GlobalTransform,
-    Color};
+use bevy::prelude::{default, Camera2dBundle, Commands, EventReader, OrthographicProjection, Query, Res, SpriteBundle, Transform, With, Without, Camera, GlobalTransform, Color, ResMut, Entity};
 use bevy::render::camera::{ScalingMode};
 use bevy::time::Time;
+use bevy::utils::HashSet;
 use bevy_xpbd_2d::components::{
     Collider, CollisionLayers, ExternalForce, Position, RigidBody};
 use bevy_xpbd_2d::prelude::{LinearVelocity, Rotation};
@@ -32,6 +19,7 @@ use bevy_prototype_lyon::geometry::GeometryBuilder;
 use bevy_prototype_lyon::path::ShapePath;
 use bevy_prototype_lyon::shapes;
 use bevy_xpbd_2d::math::Vector2;
+use bevy_xpbd_2d::parry::na::Isometry;
 use rand::Rng;
 
 pub fn load_background(
@@ -80,6 +68,7 @@ pub fn spawn_player(
             },
             Player {},
             RigidBody::Kinematic,
+            QuadCoord::default(),
             Position::from(Vec2 {
                 x: 0.0,
                 y: 0.0,
@@ -93,16 +82,18 @@ pub fn spawn_boids(
     mut commands: Commands,
     asset_server: Res<AssetServer>) {
     let mut rng = rand::thread_rng();
-    for _ in 0..100 {
+    for _ in 0..1000 {
         let x = rng.gen_range(-250.0..250.0);
         let y = rng.gen_range(-250.0..250.0);
         commands
             .spawn((
                 BoidDirection {
                     force_scale: 5.0,
+                    direction: Vec2::new(rng.gen_range(-1.0..1.0), rng.gen_range(-1.0..1.0)).try_normalize().unwrap_or(Vec2::Y),
                     ..default()
                 },
                 Boid {},
+                QuadCoord::default(),
                 BoidStuff::default(),
                 SpriteBundle {
                     transform: Transform::from_xyz(
@@ -294,7 +285,7 @@ pub fn boid_steering(mut query: Query<(
         let cohesion_direction = (boid_stuff.flock_center - position.0).normalize_or_zero() * boid_stuff.cohesion_factor;
         let separation_direction = if boid_stuff.separation_boids > 0 { boid_stuff.separation_vector.normalize_or_zero() * boid_stuff.separation_factor } else { Vec2::ZERO };
         let alignment_direction = if boid_stuff.alignment_boids > 0 { boid_stuff.alignment_direction * boid_stuff.alignment_factor } else { Vec2::ZERO };
-        direction_control.direction = direction_control.direction.lerp (((cohesion_direction + separation_direction + alignment_direction) / 3.0).normalize_or_zero(), 0.15);
+        direction_control.direction = direction_control.direction.lerp(((cohesion_direction + separation_direction + alignment_direction) / 3.0).normalize_or_zero(), 0.15);
 
         let target_up = direction_control.up.lerp(direction_control.direction, 0.5);
         let to_add = Rotation::from_radians(
@@ -308,6 +299,70 @@ pub fn boid_steering(mut query: Query<(
     }
 }
 
+pub fn quad_boid_flocking(
+    mut query: Query<(
+        Entity,
+        &Position,
+        &QuadCoord,
+        &mut BoidStuff)>,
+    other_query: Query<(&Position, &BoidDirection)>,
+    quad_store: Res<QuadStore>,
+) {
+    let mut iter = query.iter_mut();
+    while let Some((entity, position, quad_coord, mut boid_stuff)) = iter.next() {
+        boid_stuff.flock_center = Vector2::ZERO;
+        boid_stuff.cohesion_boids = 0;
+        boid_stuff.separation_vector = Vector2::ZERO;
+        boid_stuff.separation_boids = 0;
+        boid_stuff.alignment_boids = 0;
+        boid_stuff.alignment_direction = Vector2::ZERO;
+
+
+        let quad_coords =
+            (-1..=1).map(|x|
+                (-1..=1).map(move |y|
+                    QuadCoord::new(quad_coord.x + x, quad_coord.y + y))).flatten().collect::<Vec<_>>();
+
+        let others = quad_coords
+            .iter()
+            .filter_map(|coord|
+                quad_store.0.get(coord)
+            ).flatten().collect::<Vec<_>>();
+
+        for other in others {
+            if !entity.eq(other) {
+                if let Ok((other_position, other_boid_direction)) = other_query.get(*other) {
+                    let delta: Vec2 = other_position.0 - position.0;
+                    let distance_sq: f32 = delta.length_squared();
+                    if distance_sq < boid_stuff.cohesion_distance {
+                        // cohesion
+                        boid_stuff.flock_center += other_position.0;
+                        boid_stuff.cohesion_boids += 1;
+
+                        if distance_sq < boid_stuff.separation_distance {
+                            boid_stuff.separation_vector += delta * -1.0;
+                            boid_stuff.separation_boids += 1;
+                        }
+                    }
+                    if distance_sq < boid_stuff.alignment_distance {
+                        boid_stuff.alignment_direction += other_boid_direction.direction;
+                        boid_stuff.alignment_boids += 1;
+                    }
+                }
+            }
+        }
+
+        if boid_stuff.cohesion_boids > 0 {
+            boid_stuff.flock_center = boid_stuff.flock_center / boid_stuff.cohesion_boids as f32;
+        }
+        if boid_stuff.separation_boids > 0 {
+            boid_stuff.separation_vector = boid_stuff.separation_vector / boid_stuff.separation_boids as f32;
+        }
+        if boid_stuff.alignment_boids > 0 {
+            boid_stuff.alignment_direction = boid_stuff.alignment_direction / boid_stuff.alignment_boids as f32;
+        }
+    }
+}
 
 pub fn boid_flocking(
     mut query: Query<(
@@ -362,7 +417,7 @@ pub fn boid_flocking(
         }
     }
     let mut iter = query.iter_mut();
-    while let Some((position,boid_direction, mut boid_stuff)) = iter.next() {
+    while let Some((position, boid_direction, mut boid_stuff)) = iter.next() {
         if boid_stuff.cohesion_boids > 0 {
             // boid_stuff.cohesion_center += position.0;
             // boid_stuff.cohesion_boids += 1; // Add self
@@ -422,8 +477,89 @@ pub fn hunger_system(time: Res<Time>, mut hungers: Query<&mut Hungry>) {
     }
 }
 
-pub fn simple_quad_system(
-    query: Query<(&Position, &mut QuadCoord), With<Boid>>,
+pub fn naive_quad_system(
+    mut query: Query<(Entity, &Position, &mut QuadCoord)>,
+    mut quad_store: ResMut<QuadStore>,
 ) {
+    let mut iter = query.iter_mut();
+    while let Some((entity, position, mut quad_coord)) = iter.next() {
+        let new_coord = QuadCoord::new(
+            (position.0.x / 25.0).floor() as i32,
+            (position.0.y / 25.0).floor() as i32,
+        );
 
+        if !new_coord.eq(&quad_coord) {
+            if !quad_store.0.contains_key(&new_coord) {
+                quad_store.0.insert(new_coord, HashSet::new());
+            }
+            let old_coord = quad_coord.clone();
+            if quad_store.0.contains_key(&old_coord) {
+                let mut set = quad_store.0.get_mut(&old_coord).unwrap();
+                set.remove(&entity);
+                if set.is_empty() {
+                    quad_store.0.remove(&old_coord);
+                }
+            }
+
+            quad_store.0.get_mut(&new_coord).unwrap().insert(entity);
+
+            quad_coord.x = new_coord.x;
+            quad_coord.y = new_coord.y;
+        }
+    }
 }
+
+// fn find_prey_action_system(
+//     time: Res<Time>,
+//     mut hungers: Query<&mut Hungry>,
+//     // We execute actions by querying for their associated Action Component
+//     // (Drink in this case). You'll always need both Actor and ActionState.
+//     mut query: Query<(&Actor, &mut ActionState, &Hunt, &ActionSpan)>,
+// ) {
+//     for (Actor(actor), mut state, hunt, span) in &mut query {
+//
+//         /*
+//         Hunting, how is it done?
+//         Well, if we are using some kind of naïve grid sub-division system, I would say
+//         we simply check the grid square we are in and the neighbouring ones for things we can
+//         prey upon.
+//
+//         If we don't find any prey, we move to some quadrant.
+//
+//         Otherwise, I guess something happens.
+//          */
+//
+//
+//
+//         // This sets up the tracing scope. Any `debug` calls here will be
+//         // spanned together in the output.
+//         let _guard = span.span().enter();
+//
+//         // Use the drink_action's actor to look up the corresponding Thirst Component.
+//         if let Ok(mut thirst) = thirsts.get_mut(*actor) {
+//             match *state {
+//                 ActionState::Requested => {
+//                     debug!("Time to drink some water!");
+//                     *state = ActionState::Executing;
+//                 }
+//                 ActionState::Executing => {
+//                     trace!("Drinking...");
+//                     thirst.thirst -=
+//                         hunt.per_second * (time.delta().as_micros() as f32 / 1_000_000.0);
+//                     if thirst.thirst <= hunt.until {
+//                         // To "finish" an action, we set its state to Success or
+//                         // Failure.
+//                         debug!("Done drinking water");
+//                         *state = ActionState::Success;
+//                     }
+//                 }
+//                 // All Actions should make sure to handle cancellations!
+//                 ActionState::Cancelled => {
+//                     debug!("Action was cancelled. Considering this a failure.");
+//                     *state = ActionState::Failure;
+//                 }
+//                 _ => {}
+//             }
+//         }
+//     }
+// }

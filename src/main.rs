@@ -1,10 +1,10 @@
 use bevy::prelude::*;
+use bevy::utils::hashbrown::HashMap;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_prototype_lyon::plugin::ShapePlugin;
 use bevy_xpbd_2d::prelude::*;
 use systems::*;
-use crate::components::{BoidDirection, BoidStuff, DirectionControl};
-use kdtree::KdTree;
+use crate::components::{BoidDirection, BoidStuff, DirectionControl, QuadCoord, QuadStore};
 
 mod components;
 mod systems;
@@ -19,11 +19,13 @@ fn main() {
         .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
         .add_plugins(PhysicsPlugins::default())
         .add_plugins(ShapePlugin)
+        .insert_resource(QuadStore(HashMap::new()))
         .insert_resource(Gravity(Vec2::ZERO))
         .insert_resource(FixedTime::new_from_secs(FIXED_TIME_STEP))
         .register_type::<DirectionControl>()
         .register_type::<BoidDirection>()
         .register_type::<BoidStuff>()
+        .register_type::<QuadCoord>()
         .add_plugins(WorldInspectorPlugin::new())
         .add_systems(Startup, load_background)
         .add_systems(Startup, spawn_camera)
@@ -42,7 +44,8 @@ fn main() {
         .add_systems(Update, linear_velocity_control_player)
         .add_systems(Update, linear_velocity_control_boid)
         .add_systems(Update, boid_steering)
-        .add_systems(FixedUpdate, boid_flocking)
+        .add_systems(FixedUpdate, quad_boid_flocking)
+        .add_systems(FixedUpdate, naive_quad_system)
         .run();
 }
 

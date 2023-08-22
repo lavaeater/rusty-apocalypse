@@ -1,7 +1,9 @@
-use bevy::prelude::{Bundle, Component, Reflect, SpriteSheetBundle};
+use bevy::prelude::{Bundle, Component, Entity, Reflect, Resource, SpriteSheetBundle};
+use bevy::utils::{HashMap, HashSet};
 use bevy_ecs_ldtk::{LdtkEntity, LdtkIntCell};
 use bevy_xpbd_2d::math::Vector2;
 use bevy_xpbd_2d::prelude::Rotation;
+use big_brain::prelude::ActionBuilder;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Default, Component)]
 pub struct Wall;
@@ -58,11 +60,11 @@ impl Default for BoidStuff {
             flock_center: Vector2::ZERO,
             separation_vector: Vector2::ZERO,
             separation_distance: 25.0,
-            cohesion_distance: 150.0,
+            cohesion_distance: 100.0,
             separation_factor: 0.5,
             cohesion_factor: 0.5,
             alignment_direction: Vector2::ZERO,
-            alignment_distance: 100.0,
+            alignment_distance: 75.0,
             alignment_factor: 0.7,
             alignment_boids: 0,
         }
@@ -123,7 +125,8 @@ pub struct GameCam {}
 #[derive(Component)]
 pub struct CameraFollow {}
 
-#[derive(Component)]
+#[derive(Reflect)]
+#[derive(Component, PartialEq, Eq, Clone, Copy, Debug, Hash)]
 pub struct QuadCoord {
     pub x: i32,
     pub y: i32,
@@ -133,7 +136,13 @@ impl QuadCoord {
     pub fn new(x: i32, y: i32) -> Self {
         Self { x, y }
     }
+    pub fn default() -> Self {
+        Self { x: -15000, y: -15000 }
+    }
 }
+
+#[derive(Resource)]
+pub struct QuadStore(pub HashMap<QuadCoord, HashSet<Entity>>);
 
 
 #[derive(Bundle, LdtkEntity)]
@@ -156,6 +165,12 @@ pub struct IntCell {
 pub struct Hungry {
     pub per_second: f32,
     pub hunger: f32,
+}
+
+#[derive(Clone, Component, Debug, ActionBuilder)]
+pub struct Hunt {
+    until: f32,
+    per_second: f32,
 }
 
 impl Hungry {
