@@ -1,5 +1,5 @@
 use std::ops::{AddAssign};
-use crate::components::{CameraFollow, Player, GameCam, DirectionControl, AimLine, Boid, BoidStuff, BoidDirection, Hungry, QuadCoord, Hunt, QuadStore, PlayerBundle};
+use crate::components::{CameraFollow, Player, GameCam, DirectionControl, AimLine, Boid, BoidStuff, BoidDirection, Hunger, QuadCoord, Hunt, QuadStore, PlayerBundle, Prey, Hungry};
 use crate::{CAMERA_SCALE, Layer, METERS_PER_PIXEL, PIXELS_PER_METER};
 use bevy::asset::{AssetServer};
 use bevy::input::keyboard::KeyboardInput;
@@ -21,7 +21,8 @@ use bevy_prototype_lyon::shapes;
 use bevy_xpbd_2d::math::Vector2;
 use bevy_xpbd_2d::parry::na::Isometry;
 use big_brain::actions::ActionState;
-use big_brain::prelude::{ActionSpan, Actor};
+use big_brain::pickers::FirstToScore;
+use big_brain::prelude::{ActionSpan, Actor, Score, ScorerSpan, Thinker};
 use rand::Rng;
 
 pub fn load_background(
@@ -52,20 +53,20 @@ pub fn spawn_player(
     asset_server: Res<AssetServer>) {
     commands
         .spawn((
-                   SpriteBundle {
-                       transform: Transform::from_xyz(
-                           0.0,
-                           0.0,
-                           1.0,
-                       )
-                           .with_scale(Vec3::new(
-                               METERS_PER_PIXEL,
-                               METERS_PER_PIXEL,
-                               1.0,
-                           )),
-                       texture: asset_server.load("sprites/person.png"),
-                       ..default()
-                   },
+            SpriteBundle {
+                transform: Transform::from_xyz(
+                    0.0,
+                    0.0,
+                    1.0,
+                )
+                    .with_scale(Vec3::new(
+                        METERS_PER_PIXEL,
+                        METERS_PER_PIXEL,
+                        1.0,
+                    )),
+                texture: asset_server.load("sprites/person.png"),
+                ..default()
+            },
             PlayerBundle::default(),
         ));
 }
@@ -74,11 +75,23 @@ pub fn spawn_boids(
     mut commands: Commands,
     asset_server: Res<AssetServer>) {
     let mut rng = rand::thread_rng();
-    for _ in 0..1000 {
+    for _ in 0..100 {
         let x = rng.gen_range(-250.0..250.0);
         let y = rng.gen_range(-250.0..250.0);
         commands
             .spawn((
+                Hunger::new(75.0, 2.0),
+                Thinker::build()
+                    .label("Hunger Thinker")
+                    .picker(FirstToScore { threshold: 0.8 })
+                    // Technically these are supposed to be ActionBuilders and
+                    // ScorerBuilders, but our Clone impls simplify our code here.
+                    .when(
+                        Hungry,
+                        Hunt {
+                            until: 15.0
+                        },
+                    ),
                 BoidDirection {
                     force_scale: 5.0,
                     direction: Vec2::new(rng.gen_range(-1.0..1.0), rng.gen_range(-1.0..1.0)).try_normalize().unwrap_or(Vec2::Y),
@@ -464,7 +477,7 @@ pub fn mouse_look(
     }
 }
 
-pub fn hunger_system(time: Res<Time>, mut hungers: Query<&mut Hungry>) {
+pub fn hunger_system(time: Res<Time>, mut hungers: Query<&mut Hunger>) {
     for mut hungry in &mut hungers {
         hungry.hunger += hungry.per_second * (time.delta().as_micros() as f32 / 1_000_000.0);
         if hungry.hunger >= 100.0 {
@@ -506,15 +519,41 @@ pub fn naive_quad_system(
     }
 }
 
-fn find_prey_action_system(
+// Looks familiar? It's a lot like Actions!
+pub fn hunger_scorer_system(
+    hungers: Query<&Hunger>,
+    // Same dance with the Actor here, but now we use look up Score instead of ActionState.
+    mut query: Query<(&Actor, &mut Score, &ScorerSpan), With<Hungry>>,
+) {
+    for (Actor(actor), mut score, span) in &mut query {
+        if let Ok(hunger) = hungers.get(*actor) {
+            // This is really what the job of a Scorer is. To calculate a
+            // generic "Utility" score that the Big Brain engine will compare
+            // against others, over time, and use to make decisions. This is
+            // generally "the higher the better", and "first across the finish
+            // line", but that's all configurable using Pickers!
+            //
+            // The score here must be between 0.0 and 1.0.
+            score.set(hunger.hunger / 100.0);
+            if hunger.hunger >= 80.0 {
+                span.span().in_scope(|| {
+                    debug!("Thirst above threshold! Score: {}", hunger.hunger / 100.0)
+                });
+            }
+        }
+    }
+}
+
+pub fn find_prey_action_system(
     time: Res<Time>,
-    mut hungers: Query<&mut Hungry>,
+    mut hungers: Query<&mut Hunger>,
     // We execute actions by querying for their associated Action Component
     // (Drink in this case). You'll always need both Actor and ActionState.
     mut query: Query<(&Actor, &mut ActionState, &Hunt, &ActionSpan)>,
+    pos_query: Query<(&Position, &QuadCoord)>,
+    prey_query: Query<(Entity, &QuadCoord, &Position), With<Prey>>,
 ) {
     for (Actor(actor), mut state, hunt, span) in &mut query {
-
         /*
         Hunting, how is it done?
         Well, if we are using some kind of naïve grid sub-division system, I would say
@@ -525,7 +564,6 @@ fn find_prey_action_system(
 
         Otherwise, I guess something happens.
          */
-
 
 
         // This sets up the tracing scope. Any `debug` calls here will be
@@ -541,14 +579,30 @@ fn find_prey_action_system(
                 }
                 ActionState::Executing => {
                     trace!("Searching...");
-
-                    hunger.thirst -=
-                        hunt.per_second * (time.delta().as_micros() as f32 / 1_000_000.0);
-                    if hunger.thirst <= hunt.until {
-                        // To "finish" an action, we set its state to Success or
-                        // Failure.
-                        debug!("Done drinking water");
-                        *state = ActionState::Success;
+                    let prey_iter = prey_query.iter();
+                    if let Ok((position, quad_coord)) = pos_query.get(*actor) {
+                        debug!("Searching for prey in quadrant: {:?}", quad_coord);
+                        if let Some((entity, prey_quad_coord, position)) = prey_iter.filter(|(_, prey_quad_coord, _)| {
+                            prey_quad_coord.x >= quad_coord.x - 1 && prey_quad_coord.x <= quad_coord.x + 1 &&
+                                prey_quad_coord.y >= quad_coord.y - 1 && prey_quad_coord.y <= quad_coord.y + 1
+                        }).min_by_key(|(_, _, prey_position)| {
+                            let delta = prey_position.0 - position.0;
+                            let distance_sq: f32 = delta.length_squared();
+                            distance_sq as i32
+                        }) {
+                            debug!("Found prey!");
+                            hunger.hunger = 0.0; // We are instantly full
+                            *state = ActionState::Success;
+                        } else {
+                            debug!("No prey found!");
+                            /*
+                            Now we would want the AI to try to move this boid to some other quadrant.
+                            We will do that later.
+                             */
+                            *state = ActionState::Failure;
+                        }
+                    } else {
+                        debug!("No position found for actor!");
                     }
                 }
                 // All Actions should make sure to handle cancellations!

@@ -5,7 +5,7 @@ use bevy_ecs_ldtk::{LdtkEntity, LdtkIntCell};
 use bevy_xpbd_2d::components::{Collider, CollisionLayers, Position};
 use bevy_xpbd_2d::math::Vector2;
 use bevy_xpbd_2d::prelude::{RigidBody, Rotation};
-use big_brain::prelude::ActionBuilder;
+use big_brain::prelude::{ActionBuilder, ScorerBuilder};
 use crate::{Layer, METERS_PER_PIXEL};
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Default, Component)]
@@ -200,19 +200,23 @@ pub struct IntCell {
 }
 
 #[derive(Component, Debug)]
-pub struct Hungry {
+pub struct Hunger {
     pub per_second: f32,
     pub hunger: f32,
 }
 
 #[derive(Clone, Component, Debug, ActionBuilder)]
 pub struct Hunt {
-    until: f32,
-    per_second: f32,
+    pub until: f32
 }
 
-impl Hungry {
+impl Hunger {
     pub fn new(hunger: f32, per_second: f32) -> Self {
         Self { hunger, per_second }
     }
 }
+
+#[derive(Clone, Component, Debug, ScorerBuilder)]
+pub struct Hungry;
+
+
