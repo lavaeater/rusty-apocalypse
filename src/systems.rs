@@ -1,5 +1,5 @@
 use std::ops::{AddAssign};
-use crate::components::{CameraFollow, Player, GameCam, DirectionControl, AimLine, Boid, BoidStuff, BoidDirection, Hungry};
+use crate::components::{CameraFollow, Player, GameCam, DirectionControl, AimLine, Boid, BoidStuff, BoidDirection, Hungry, QuadCoord};
 use crate::{CAMERA_SCALE, Layer, METERS_PER_PIXEL, PIXELS_PER_METER};
 use bevy::asset::{AssetServer};
 use bevy::input::keyboard::KeyboardInput;
@@ -420,4 +420,10 @@ pub fn hunger_system(time: Res<Time>, mut hungers: Query<&mut Hungry>) {
         }
         trace!("Thirst: {}", hungry.hunger);
     }
+}
+
+pub fn simple_quad_system(
+    query: Query<(&Position, &mut QuadCoord), With<Boid>>,
+) {
+
 }
