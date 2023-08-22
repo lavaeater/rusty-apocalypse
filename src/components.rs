@@ -1,9 +1,12 @@
+use bevy::math::Vec2;
 use bevy::prelude::{Bundle, Component, Entity, Reflect, Resource, SpriteSheetBundle};
 use bevy::utils::{HashMap, HashSet};
 use bevy_ecs_ldtk::{LdtkEntity, LdtkIntCell};
+use bevy_xpbd_2d::components::{Collider, CollisionLayers, Position};
 use bevy_xpbd_2d::math::Vector2;
-use bevy_xpbd_2d::prelude::Rotation;
+use bevy_xpbd_2d::prelude::{RigidBody, Rotation};
 use big_brain::prelude::ActionBuilder;
+use crate::{Layer, METERS_PER_PIXEL};
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Default, Component)]
 pub struct Wall;
@@ -29,11 +32,46 @@ pub struct PlayerStartBundle {
     player_start: PlayerStart,
 }
 
-#[derive(Component)]
+#[derive(Bundle, Clone)]
+pub struct PlayerBundle {
+    camera_follow: CameraFollow,
+    direction_control: DirectionControl,
+    player: Player,
+    prey: Prey,
+    rigid_body: RigidBody,
+    quad_coord: QuadCoord,
+    position: Position,
+    collider: Collider,
+    collision_layers: CollisionLayers,
+}
+
+impl Default for PlayerBundle {
+    fn default() -> Self {
+        Self {
+            camera_follow: CameraFollow {},
+            direction_control: DirectionControl::default(),
+            player: Player {},
+            prey: Prey {},
+            rigid_body: RigidBody::Kinematic,
+            quad_coord: QuadCoord::default(),
+            position: Position::from(Vec2 {
+                x: 0.0,
+                y: 0.0,
+            }),
+            collider: Collider::cuboid(16.0 * METERS_PER_PIXEL, 8.0 * METERS_PER_PIXEL),
+            collision_layers: CollisionLayers::new([Layer::Player], [Layer::Walls, Layer::Water]),
+        }
+    }
+}
+
+#[derive(Component, Clone)]
 pub struct Player {}
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct Boid {}
+
+#[derive(Component, Clone)]
+pub struct Prey {}
 
 #[derive(Reflect)]
 #[derive(Copy, Clone, Debug, Component)]
@@ -122,7 +160,7 @@ impl Default for BoidDirection {
 #[derive(Component)]
 pub struct GameCam {}
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct CameraFollow {}
 
 #[derive(Reflect)]

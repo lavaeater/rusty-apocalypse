@@ -1,9 +1,9 @@
 use std::ops::{AddAssign};
-use crate::components::{CameraFollow, Player, GameCam, DirectionControl, AimLine, Boid, BoidStuff, BoidDirection, Hungry, QuadCoord, Hunt, QuadStore};
+use crate::components::{CameraFollow, Player, GameCam, DirectionControl, AimLine, Boid, BoidStuff, BoidDirection, Hungry, QuadCoord, Hunt, QuadStore, PlayerBundle};
 use crate::{CAMERA_SCALE, Layer, METERS_PER_PIXEL, PIXELS_PER_METER};
 use bevy::asset::{AssetServer};
 use bevy::input::keyboard::KeyboardInput;
-use bevy::log::trace;
+use bevy::log::{debug, trace};
 use bevy::math::{Rect, Vec2, Vec3};
 use bevy::prelude::{default, Camera2dBundle, Commands, EventReader, OrthographicProjection, Query, Res, SpriteBundle, Transform, With, Without, Camera, GlobalTransform, Color, ResMut, Entity};
 use bevy::render::camera::{ScalingMode};
@@ -20,6 +20,8 @@ use bevy_prototype_lyon::path::ShapePath;
 use bevy_prototype_lyon::shapes;
 use bevy_xpbd_2d::math::Vector2;
 use bevy_xpbd_2d::parry::na::Isometry;
+use big_brain::actions::ActionState;
+use big_brain::prelude::{ActionSpan, Actor};
 use rand::Rng;
 
 pub fn load_background(
@@ -50,31 +52,21 @@ pub fn spawn_player(
     asset_server: Res<AssetServer>) {
     commands
         .spawn((
-            CameraFollow {},
-            DirectionControl::default(),
-            SpriteBundle {
-                transform: Transform::from_xyz(
-                    0.0,
-                    0.0,
-                    1.0,
-                )
-                    .with_scale(Vec3::new(
-                        METERS_PER_PIXEL,
-                        METERS_PER_PIXEL,
-                        1.0,
-                    )),
-                texture: asset_server.load("sprites/person.png"),
-                ..default()
-            },
-            Player {},
-            RigidBody::Kinematic,
-            QuadCoord::default(),
-            Position::from(Vec2 {
-                x: 0.0,
-                y: 0.0,
-            }),
-            Collider::cuboid(16.0 * METERS_PER_PIXEL, 8.0 * METERS_PER_PIXEL),
-            CollisionLayers::new([Layer::Player], [Layer::Walls, Layer::Water]),
+                   SpriteBundle {
+                       transform: Transform::from_xyz(
+                           0.0,
+                           0.0,
+                           1.0,
+                       )
+                           .with_scale(Vec3::new(
+                               METERS_PER_PIXEL,
+                               METERS_PER_PIXEL,
+                               1.0,
+                           )),
+                       texture: asset_server.load("sprites/person.png"),
+                       ..default()
+                   },
+            PlayerBundle::default(),
         ));
 }
 
@@ -514,57 +506,58 @@ pub fn naive_quad_system(
     }
 }
 
-// fn find_prey_action_system(
-//     time: Res<Time>,
-//     mut hungers: Query<&mut Hungry>,
-//     // We execute actions by querying for their associated Action Component
-//     // (Drink in this case). You'll always need both Actor and ActionState.
-//     mut query: Query<(&Actor, &mut ActionState, &Hunt, &ActionSpan)>,
-// ) {
-//     for (Actor(actor), mut state, hunt, span) in &mut query {
-//
-//         /*
-//         Hunting, how is it done?
-//         Well, if we are using some kind of naïve grid sub-division system, I would say
-//         we simply check the grid square we are in and the neighbouring ones for things we can
-//         prey upon.
-//
-//         If we don't find any prey, we move to some quadrant.
-//
-//         Otherwise, I guess something happens.
-//          */
-//
-//
-//
-//         // This sets up the tracing scope. Any `debug` calls here will be
-//         // spanned together in the output.
-//         let _guard = span.span().enter();
-//
-//         // Use the drink_action's actor to look up the corresponding Thirst Component.
-//         if let Ok(mut thirst) = thirsts.get_mut(*actor) {
-//             match *state {
-//                 ActionState::Requested => {
-//                     debug!("Time to drink some water!");
-//                     *state = ActionState::Executing;
-//                 }
-//                 ActionState::Executing => {
-//                     trace!("Drinking...");
-//                     thirst.thirst -=
-//                         hunt.per_second * (time.delta().as_micros() as f32 / 1_000_000.0);
-//                     if thirst.thirst <= hunt.until {
-//                         // To "finish" an action, we set its state to Success or
-//                         // Failure.
-//                         debug!("Done drinking water");
-//                         *state = ActionState::Success;
-//                     }
-//                 }
-//                 // All Actions should make sure to handle cancellations!
-//                 ActionState::Cancelled => {
-//                     debug!("Action was cancelled. Considering this a failure.");
-//                     *state = ActionState::Failure;
-//                 }
-//                 _ => {}
-//             }
-//         }
-//     }
-// }
+fn find_prey_action_system(
+    time: Res<Time>,
+    mut hungers: Query<&mut Hungry>,
+    // We execute actions by querying for their associated Action Component
+    // (Drink in this case). You'll always need both Actor and ActionState.
+    mut query: Query<(&Actor, &mut ActionState, &Hunt, &ActionSpan)>,
+) {
+    for (Actor(actor), mut state, hunt, span) in &mut query {
+
+        /*
+        Hunting, how is it done?
+        Well, if we are using some kind of naïve grid sub-division system, I would say
+        we simply check the grid square we are in and the neighbouring ones for things we can
+        prey upon.
+
+        If we don't find any prey, we move to some quadrant.
+
+        Otherwise, I guess something happens.
+         */
+
+
+
+        // This sets up the tracing scope. Any `debug` calls here will be
+        // spanned together in the output.
+        let _guard = span.span().enter();
+
+        // Use the drink_action's actor to look up the corresponding Thirst Component.
+        if let Ok(mut hunger) = hungers.get_mut(*actor) {
+            match *state {
+                ActionState::Requested => {
+                    debug!("Time to look for some prey!");
+                    *state = ActionState::Executing;
+                }
+                ActionState::Executing => {
+                    trace!("Searching...");
+
+                    hunger.thirst -=
+                        hunt.per_second * (time.delta().as_micros() as f32 / 1_000_000.0);
+                    if hunger.thirst <= hunt.until {
+                        // To "finish" an action, we set its state to Success or
+                        // Failure.
+                        debug!("Done drinking water");
+                        *state = ActionState::Success;
+                    }
+                }
+                // All Actions should make sure to handle cancellations!
+                ActionState::Cancelled => {
+                    debug!("Action was cancelled. Considering this a failure.");
+                    *state = ActionState::Failure;
+                }
+                _ => {}
+            }
+        }
+    }
+}
