@@ -57,16 +57,16 @@ impl Default for BoidStuff {
         Self {
             cohesion_boids: 0,
             separation_boids: 0,
+            alignment_boids: 0,
             flock_center: Vector2::ZERO,
             separation_vector: Vector2::ZERO,
+            alignment_direction: Vector2::ZERO,
             separation_distance: 25.0,
             cohesion_distance: 100.0,
+            alignment_distance: 75.0,
             separation_factor: 0.5,
             cohesion_factor: 0.5,
-            alignment_direction: Vector2::ZERO,
-            alignment_distance: 75.0,
             alignment_factor: 0.7,
-            alignment_boids: 0,
         }
     }
 }

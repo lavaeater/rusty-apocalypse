@@ -94,7 +94,12 @@ pub fn spawn_boids(
                 },
                 Boid {},
                 QuadCoord::default(),
-                BoidStuff::default(),
+                BoidStuff {
+                    separation_factor: rng.gen_range(0.25..1.0),
+                    cohesion_factor: rng.gen_range(0.25..1.0),
+                    alignment_factor: rng.gen_range(0.25..1.0),
+                    ..default()
+                },
                 SpriteBundle {
                     transform: Transform::from_xyz(
                         x,
