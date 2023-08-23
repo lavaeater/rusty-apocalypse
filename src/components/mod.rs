@@ -1,3 +1,4 @@
+use bevy::core::Name;
 use bevy::math::Vec2;
 use bevy::prelude::{Bundle, Component, Entity, Reflect, Resource, SpriteSheetBundle};
 use bevy::utils::{HashMap, HashSet};
@@ -34,7 +35,7 @@ pub struct PlayerStartBundle {
 
 #[derive(Bundle, Clone)]
 pub struct PlayerBundle {
-    name: AAName,
+    name: Name,
     camera_follow: CameraFollow,
     direction_control: DirectionControl,
     player: Player,
@@ -49,7 +50,7 @@ pub struct PlayerBundle {
 impl Default for PlayerBundle {
     fn default() -> Self {
         Self {
-            name: AAName("Player".to_string()),
+            name: Name::from("Player".to_string()),
             camera_follow: CameraFollow {},
             direction_control: DirectionControl::default(),
             player: Player {},
