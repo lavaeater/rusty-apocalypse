@@ -268,7 +268,7 @@ pub fn naive_quad_system(
             }
             let old_coord = quad_coord.clone();
             if quad_store.0.contains_key(&old_coord) {
-                let mut set = quad_store.0.get_mut(&old_coord).unwrap();
+                let set = quad_store.0.get_mut(&old_coord).unwrap();
                 set.remove(&entity);
                 if set.is_empty() {
                     quad_store.0.remove(&old_coord);

@@ -180,74 +180,6 @@ pub fn quad_boid_flocking(
     }
 }
 
-pub fn boid_flocking(
-    mut query: Query<(
-        &Position,
-        &BoidDirection,
-        &mut BoidStuff
-    )>
-) {
-    let mut pre_iter = query.iter_mut();
-    while let Some((position, boid_direction, mut boid_stuff)) = pre_iter.next() {
-        boid_stuff.flock_center = Vector2::ZERO;
-        boid_stuff.cohesion_boids = 0;
-        boid_stuff.separation_vector = Vector2::ZERO;
-        boid_stuff.separation_boids = 0;
-        boid_stuff.alignment_boids = 0;
-        boid_stuff.alignment_direction = Vector2::ZERO;
-    }
-
-    let mut iter_combos = query.iter_combinations_mut();
-    while let Some([(
-        position_a,
-        boid_direction_a,
-        mut boid_stuff_a), (
-        position_b,
-        boid_direction_b,
-        mut boid_stuff_b)]) =
-        iter_combos.fetch_next()
-    {
-        // get a vector pointing from a to b
-        let delta_a: Vec2 = position_b.0 - position_a.0;
-        let delta_b = delta_a * -1.0;
-        let distance_sq: f32 = delta_a.length_squared();
-        if distance_sq < boid_stuff_a.cohesion_distance {
-            // cohesion
-            boid_stuff_a.flock_center += position_b.0;
-            boid_stuff_a.cohesion_boids += 1;
-            boid_stuff_b.flock_center += position_a.0;
-            boid_stuff_b.cohesion_boids += 1;
-
-            if distance_sq < boid_stuff_a.separation_distance {
-                boid_stuff_a.separation_vector += delta_b;
-                boid_stuff_a.separation_boids += 1;
-                boid_stuff_b.separation_vector += delta_a;
-                boid_stuff_b.separation_boids += 1;
-            }
-        }
-        if distance_sq < boid_stuff_a.alignment_distance {
-            boid_stuff_a.alignment_direction += boid_direction_b.direction;
-            boid_stuff_a.alignment_boids += 1;
-            boid_stuff_b.alignment_direction += boid_direction_a.direction;
-            boid_stuff_b.alignment_boids += 1;
-        }
-    }
-    let mut iter = query.iter_mut();
-    while let Some((position, boid_direction, mut boid_stuff)) = iter.next() {
-        if boid_stuff.cohesion_boids > 0 {
-            // boid_stuff.cohesion_center += position.0;
-            // boid_stuff.cohesion_boids += 1; // Add self
-            boid_stuff.flock_center = boid_stuff.flock_center / boid_stuff.cohesion_boids as f32;
-        }
-        if boid_stuff.separation_boids > 0 {
-            boid_stuff.separation_vector = boid_stuff.separation_vector / boid_stuff.separation_boids as f32;
-        }
-        if boid_stuff.alignment_boids > 0 {
-            boid_stuff.alignment_direction = boid_stuff.alignment_direction / boid_stuff.alignment_boids as f32;
-        }
-    }
-}
-
 pub fn hunger_system(time: Res<Time>, mut hungers: Query<&mut Hunger>) {
     for mut hungry in &mut hungers {
         hungry.hunger += hungry.per_second * (time.delta().as_micros() as f32 / 1_000_000.0);
@@ -260,12 +192,11 @@ pub fn hunger_system(time: Res<Time>, mut hungers: Query<&mut Hunger>) {
 
 
 pub fn hunt_prey_action_system(
-    mut commands: Commands,
     mut query: Query<(&Actor, &mut ActionState, &Hunt, &ActionSpan)>,
     mut boid_query: Query<(&HuntTarget, &mut BoidStuff, &Position)>,
     hunt_target_position_query: Query<&Position>,
 ) {
-    for (Actor(actor), mut state, hunt, span) in &mut query {
+    for (Actor(actor), mut state, _, _) in &mut query {
         /*
         Hunting, how is it done?
         Well, if we are using some kind of naïve grid sub-division system, I would say
@@ -309,7 +240,7 @@ pub fn find_prey_action_system(
     pos_query: Query<(&Position, &QuadCoord)>,
     prey_query: Query<(Entity, &QuadCoord, &Position), With<Prey>>,
 ) {
-    for (Actor(actor), mut state, find_prey, span) in &mut query {
+    for (Actor(actor), mut state, _, span) in &mut query {
         /*
         Hunting, how is it done?
         Well, if we are using some kind of naïve grid sub-division system, I would say
@@ -337,7 +268,7 @@ pub fn find_prey_action_system(
                 let prey_iter = prey_query.iter();
                 if let Ok((position, quad_coord)) = pos_query.get(*actor) {
                     debug!("Searching for prey in quadrant: {:?}", quad_coord);
-                    if let Some((entity, prey_quad_coord, position)) = prey_iter.filter(|(_, prey_quad_coord, _)| {
+                    if let Some((entity, _, _)) = prey_iter.filter(|(_, prey_quad_coord, _)| {
                         prey_quad_coord.x >= quad_coord.x - 1 && prey_quad_coord.x <= quad_coord.x + 1 &&
                             prey_quad_coord.y >= quad_coord.y - 1 && prey_quad_coord.y <= quad_coord.y + 1
                     }).min_by_key(|(_, _, prey_position)| {
