@@ -1,15 +1,18 @@
-use bevy::log::LogPlugin;
+
 use bevy::prelude::*;
 use bevy::utils::hashbrown::HashMap;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_prototype_lyon::plugin::ShapePlugin;
 use bevy_xpbd_2d::prelude::*;
 use big_brain::{BigBrainPlugin, BigBrainSet};
+use boids::{boid_steering, BoidDirection, BoidStuff, find_prey_action_system, hunger_scorer_system, hunger_system, hunt_prey_action_system, quad_boid_flocking, spawn_boids};
 use systems::*;
-use crate::components::{BoidDirection, BoidStuff, DirectionControl, QuadCoord, QuadStore};
+use crate::boids::{Hunger, HuntTarget};
+use crate::components::{DirectionControl, QuadCoord, QuadStore};
 
 mod components;
 mod systems;
+mod boids;
 
 const PIXELS_PER_METER: f32 = 16.0;
 const METERS_PER_PIXEL: f32 = 1.0 / PIXELS_PER_METER;
@@ -29,6 +32,8 @@ fn main() {
         .register_type::<BoidDirection>()
         .register_type::<BoidStuff>()
         .register_type::<QuadCoord>()
+        .register_type::<HuntTarget>()
+        .register_type::<Hunger>()
         .add_plugins(WorldInspectorPlugin::new())
         .add_plugins(BigBrainPlugin::new(PreUpdate))
         .add_systems(Startup,
@@ -59,7 +64,7 @@ fn main() {
         .add_systems(
             PreUpdate,
             (
-                find_prey_action_system.in_set(BigBrainSet::Actions),
+                (find_prey_action_system, hunt_prey_action_system).in_set(BigBrainSet::Actions),
                 hunger_scorer_system.in_set(BigBrainSet::Scorers),
             ),
         ).run();

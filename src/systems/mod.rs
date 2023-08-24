@@ -1,17 +1,15 @@
-use std::ops::{AddAssign};
-use crate::components::{CameraFollow, Player, GameCam, DirectionControl, AimLine, Boid, BoidStuff, BoidDirection, Hunger, QuadCoord, Hunt, QuadStore, PlayerBundle, Prey, Hungry, AAName};
-use crate::{CAMERA_SCALE, Layer, METERS_PER_PIXEL, PIXELS_PER_METER};
-use bevy::asset::{AssetServer};
+use std::ops::AddAssign;
+use crate::components::{AimLine, CameraFollow, DirectionControl, GameCam, Player, PlayerBundle, QuadCoord, QuadStore};
+use crate::{CAMERA_SCALE, METERS_PER_PIXEL, PIXELS_PER_METER};
+use bevy::asset::AssetServer;
 use bevy::core::Name;
 use bevy::input::keyboard::KeyboardInput;
-use bevy::log::{debug, trace};
 use bevy::math::{Rect, Vec2, Vec3};
-use bevy::prelude::{default, Camera2dBundle, Commands, EventReader, OrthographicProjection, Query, Res, SpriteBundle, Transform, With, Without, Camera, GlobalTransform, Color, ResMut, Entity};
-use bevy::render::camera::{ScalingMode};
-use bevy::time::Time;
+use bevy::prelude::{Camera, Camera2dBundle, Color, Commands, default, Entity, EventReader, GlobalTransform, OrthographicProjection, Query, Res, ResMut, SpriteBundle, Transform, With, Without};
+use bevy::render::camera::ScalingMode;
 use bevy::utils::HashSet;
 use bevy_xpbd_2d::components::{
-    Collider, CollisionLayers, ExternalForce, Position, RigidBody};
+    ExternalForce, Position};
 use bevy_xpbd_2d::prelude::{LinearVelocity, Rotation};
 use bevy::window::{PrimaryWindow, Window};
 use bevy_prototype_lyon::draw::{Fill, Stroke};
@@ -19,12 +17,7 @@ use bevy_prototype_lyon::entity::{Path, ShapeBundle};
 use bevy_prototype_lyon::geometry::GeometryBuilder;
 use bevy_prototype_lyon::path::ShapePath;
 use bevy_prototype_lyon::shapes;
-use bevy_xpbd_2d::math::Vector2;
-use bevy_xpbd_2d::parry::na::Isometry;
-use big_brain::actions::ActionState;
-use big_brain::pickers::FirstToScore;
-use big_brain::prelude::{ActionSpan, Actor, Score, ScorerSpan, Thinker};
-use rand::Rng;
+use crate::boids::{Boid, BoidDirection};
 
 pub fn load_background(
     mut commands: Commands,
@@ -70,69 +63,6 @@ pub fn spawn_player(
             },
             PlayerBundle::default(),
         ));
-}
-
-pub fn spawn_boids(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>) {
-    let mut rng = rand::thread_rng();
-    for n in 0..100 {
-        let x = rng.gen_range(-250.0..250.0);
-        let y = rng.gen_range(-250.0..250.0);
-        commands
-            .spawn((
-                Name::from("Boid ".to_string() + &n.to_string()),
-                Hunger::new(75.0, 2.0),
-                Thinker::build()
-                    .label("Hunger Thinker")
-                    .picker(FirstToScore { threshold: 0.8 })
-                    // Technically these are supposed to be ActionBuilders and
-                    // ScorerBuilders, but our Clone impls simplify our code here.
-                    .when(
-                        Hungry,
-                        Hunt {
-                            until: 15.0
-                        },
-                    ),
-                BoidDirection {
-                    force_scale: 5.0,
-                    direction: Vec2::new(rng.gen_range(-1.0..1.0), rng.gen_range(-1.0..1.0)).try_normalize().unwrap_or(Vec2::Y),
-                    ..default()
-                },
-                Boid {},
-                QuadCoord::default(),
-                BoidStuff {
-                    separation_factor: rng.gen_range(0.25..1.0),
-                    cohesion_factor: rng.gen_range(0.25..1.0),
-                    alignment_factor: rng.gen_range(0.25..1.0),
-                    ..default()
-                },
-                SpriteBundle {
-                    transform: Transform::from_xyz(
-                        x,
-                        y,
-                        2.0,
-                    )
-                        .with_scale(Vec3::new(
-                            METERS_PER_PIXEL,
-                            METERS_PER_PIXEL,
-                            1.0,
-                        )),
-                    texture: asset_server.load("sprites/boid.png"),
-                    ..default()
-                },
-                RigidBody::Kinematic,
-                Position::from(Vec2 {
-                    x,
-                    y,
-                }),
-                Collider::triangle(
-                    Vec2::new(0.0, 8.0 * METERS_PER_PIXEL),
-                    Vec2::new(8.0 * METERS_PER_PIXEL, -8.0 * METERS_PER_PIXEL),
-                    Vec2::new(-8.0 * METERS_PER_PIXEL, -8.0 * METERS_PER_PIXEL)),
-                CollisionLayers::new([Layer::Boid], [Layer::Player]),
-            ));
-    }
 }
 
 pub fn spawn_camera(mut commands: Commands) {
@@ -286,165 +216,6 @@ pub fn draw_mouse_aim(
     *path = ShapePath::build_as(&line)
 }
 
-pub fn boid_steering(mut query: Query<(
-    &mut BoidDirection,
-    &mut Rotation,
-    &BoidStuff,
-    &Transform,
-    &Position), With<Boid>>) {
-    let mut iter = query.iter_mut();
-    while let Some((mut direction_control, mut rotation, boid_stuff, transform, position)) = iter.next() {
-        direction_control.up = Vec2::new(transform.up().x, transform.up().y);
-        let cohesion_direction = (boid_stuff.flock_center - position.0).normalize_or_zero() * boid_stuff.cohesion_factor;
-        let separation_direction = if boid_stuff.separation_boids > 0 { boid_stuff.separation_vector.normalize_or_zero() * boid_stuff.separation_factor } else { Vec2::ZERO };
-        let alignment_direction = if boid_stuff.alignment_boids > 0 { boid_stuff.alignment_direction * boid_stuff.alignment_factor } else { Vec2::ZERO };
-        direction_control.direction = direction_control.direction.lerp(((cohesion_direction + separation_direction + alignment_direction) / 3.0).normalize_or_zero(), 0.15);
-
-        let target_up = direction_control.up.lerp(direction_control.direction, 0.5);
-        let to_add = Rotation::from_radians(
-            target_up
-                .angle_between(
-                    direction_control
-                        .direction
-                )
-        );
-        rotation.add_assign(to_add);
-    }
-}
-
-pub fn quad_boid_flocking(
-    mut query: Query<(
-        Entity,
-        &Position,
-        &QuadCoord,
-        &mut BoidStuff)>,
-    other_query: Query<(&Position, &BoidDirection)>,
-    quad_store: Res<QuadStore>,
-) {
-    let mut iter = query.iter_mut();
-    while let Some((entity, position, quad_coord, mut boid_stuff)) = iter.next() {
-        boid_stuff.flock_center = Vector2::ZERO;
-        boid_stuff.cohesion_boids = 0;
-        boid_stuff.separation_vector = Vector2::ZERO;
-        boid_stuff.separation_boids = 0;
-        boid_stuff.alignment_boids = 0;
-        boid_stuff.alignment_direction = Vector2::ZERO;
-
-
-        let quad_coords =
-            (-1..=1).map(|x|
-                (-1..=1).map(move |y|
-                    QuadCoord::new(quad_coord.x + x, quad_coord.y + y))).flatten().collect::<Vec<_>>();
-
-        let others = quad_coords
-            .iter()
-            .filter_map(|coord|
-                quad_store.0.get(coord)
-            ).flatten().collect::<Vec<_>>();
-
-        for other in others {
-            if !entity.eq(other) {
-                if let Ok((other_position, other_boid_direction)) = other_query.get(*other) {
-                    let delta: Vec2 = other_position.0 - position.0;
-                    let distance_sq: f32 = delta.length_squared();
-                    if distance_sq < boid_stuff.cohesion_distance {
-                        // cohesion
-                        boid_stuff.flock_center += other_position.0;
-                        boid_stuff.cohesion_boids += 1;
-
-                        if distance_sq < boid_stuff.separation_distance {
-                            boid_stuff.separation_vector += delta * -1.0;
-                            boid_stuff.separation_boids += 1;
-                        }
-                    }
-                    if distance_sq < boid_stuff.alignment_distance {
-                        boid_stuff.alignment_direction += other_boid_direction.direction;
-                        boid_stuff.alignment_boids += 1;
-                    }
-                }
-            }
-        }
-
-        if boid_stuff.cohesion_boids > 0 {
-            boid_stuff.flock_center = boid_stuff.flock_center / boid_stuff.cohesion_boids as f32;
-        }
-        if boid_stuff.separation_boids > 0 {
-            boid_stuff.separation_vector = boid_stuff.separation_vector / boid_stuff.separation_boids as f32;
-        }
-        if boid_stuff.alignment_boids > 0 {
-            boid_stuff.alignment_direction = boid_stuff.alignment_direction / boid_stuff.alignment_boids as f32;
-        }
-    }
-}
-
-pub fn boid_flocking(
-    mut query: Query<(
-        &Position,
-        &BoidDirection,
-        &mut BoidStuff
-    )>
-) {
-    let mut pre_iter = query.iter_mut();
-    while let Some((position, boid_direction, mut boid_stuff)) = pre_iter.next() {
-        boid_stuff.flock_center = Vector2::ZERO;
-        boid_stuff.cohesion_boids = 0;
-        boid_stuff.separation_vector = Vector2::ZERO;
-        boid_stuff.separation_boids = 0;
-        boid_stuff.alignment_boids = 0;
-        boid_stuff.alignment_direction = Vector2::ZERO;
-    }
-
-    let mut iter_combos = query.iter_combinations_mut();
-    while let Some([(
-        position_a,
-        boid_direction_a,
-        mut boid_stuff_a), (
-        position_b,
-        boid_direction_b,
-        mut boid_stuff_b)]) =
-        iter_combos.fetch_next()
-    {
-        // get a vector pointing from a to b
-        let delta_a: Vec2 = position_b.0 - position_a.0;
-        let delta_b = delta_a * -1.0;
-        let distance_sq: f32 = delta_a.length_squared();
-        if distance_sq < boid_stuff_a.cohesion_distance {
-            // cohesion
-            boid_stuff_a.flock_center += position_b.0;
-            boid_stuff_a.cohesion_boids += 1;
-            boid_stuff_b.flock_center += position_a.0;
-            boid_stuff_b.cohesion_boids += 1;
-
-            if distance_sq < boid_stuff_a.separation_distance {
-                boid_stuff_a.separation_vector += delta_b;
-                boid_stuff_a.separation_boids += 1;
-                boid_stuff_b.separation_vector += delta_a;
-                boid_stuff_b.separation_boids += 1;
-            }
-        }
-        if distance_sq < boid_stuff_a.alignment_distance {
-            boid_stuff_a.alignment_direction += boid_direction_b.direction;
-            boid_stuff_a.alignment_boids += 1;
-            boid_stuff_b.alignment_direction += boid_direction_a.direction;
-            boid_stuff_b.alignment_boids += 1;
-        }
-    }
-    let mut iter = query.iter_mut();
-    while let Some((position, boid_direction, mut boid_stuff)) = iter.next() {
-        if boid_stuff.cohesion_boids > 0 {
-            // boid_stuff.cohesion_center += position.0;
-            // boid_stuff.cohesion_boids += 1; // Add self
-            boid_stuff.flock_center = boid_stuff.flock_center / boid_stuff.cohesion_boids as f32;
-        }
-        if boid_stuff.separation_boids > 0 {
-            boid_stuff.separation_vector = boid_stuff.separation_vector / boid_stuff.separation_boids as f32;
-        }
-        if boid_stuff.alignment_boids > 0 {
-            boid_stuff.alignment_direction = boid_stuff.alignment_direction / boid_stuff.alignment_boids as f32;
-        }
-    }
-}
-
 pub fn mouse_look(
     mut query: Query<(
         &mut Rotation,
@@ -480,16 +251,6 @@ pub fn mouse_look(
     }
 }
 
-pub fn hunger_system(time: Res<Time>, mut hungers: Query<&mut Hunger>) {
-    for mut hungry in &mut hungers {
-        hungry.hunger += hungry.per_second * (time.delta().as_micros() as f32 / 1_000_000.0);
-        if hungry.hunger >= 100.0 {
-            hungry.hunger = 100.0;
-        }
-        trace!("Thirst: {}", hungry.hunger);
-    }
-}
-
 pub fn naive_quad_system(
     mut query: Query<(Entity, &Position, &mut QuadCoord)>,
     mut quad_store: ResMut<QuadStore>,
@@ -522,99 +283,3 @@ pub fn naive_quad_system(
     }
 }
 
-// Looks familiar? It's a lot like Actions!
-pub fn hunger_scorer_system(
-    hungers: Query<&Hunger>,
-    // Same dance with the Actor here, but now we use look up Score instead of ActionState.
-    mut query: Query<(&Actor, &mut Score, &ScorerSpan), With<Hungry>>,
-) {
-    for (Actor(actor), mut score, span) in &mut query {
-        if let Ok(hunger) = hungers.get(*actor) {
-            // This is really what the job of a Scorer is. To calculate a
-            // generic "Utility" score that the Big Brain engine will compare
-            // against others, over time, and use to make decisions. This is
-            // generally "the higher the better", and "first across the finish
-            // line", but that's all configurable using Pickers!
-            //
-            // The score here must be between 0.0 and 1.0.
-            score.set(hunger.hunger / 100.0);
-            if hunger.hunger >= 80.0 {
-                span.span().in_scope(|| {
-                    debug!("Thirst above threshold! Score: {}", hunger.hunger / 100.0)
-                });
-            }
-        }
-    }
-}
-
-pub fn find_prey_action_system(
-    time: Res<Time>,
-    mut hungers: Query<&mut Hunger>,
-    // We execute actions by querying for their associated Action Component
-    // (Drink in this case). You'll always need both Actor and ActionState.
-    mut query: Query<(&Actor, &mut ActionState, &Hunt, &ActionSpan)>,
-    pos_query: Query<(&Position, &QuadCoord)>,
-    prey_query: Query<(Entity, &QuadCoord, &Position), With<Prey>>,
-) {
-    for (Actor(actor), mut state, hunt, span) in &mut query {
-        /*
-        Hunting, how is it done?
-        Well, if we are using some kind of naïve grid sub-division system, I would say
-        we simply check the grid square we are in and the neighbouring ones for things we can
-        prey upon.
-
-        If we don't find any prey, we move to some quadrant.
-
-        Otherwise, I guess something happens.
-         */
-
-
-        // This sets up the tracing scope. Any `debug` calls here will be
-        // spanned together in the output.
-        let _guard = span.span().enter();
-
-        // Use the drink_action's actor to look up the corresponding Thirst Component.
-        if let Ok(mut hunger) = hungers.get_mut(*actor) {
-            match *state {
-                ActionState::Requested => {
-                    debug!("Time to look for some prey!");
-                    *state = ActionState::Executing;
-                }
-                ActionState::Executing => {
-                    trace!("Searching...");
-                    let prey_iter = prey_query.iter();
-                    if let Ok((position, quad_coord)) = pos_query.get(*actor) {
-                        debug!("Searching for prey in quadrant: {:?}", quad_coord);
-                        if let Some((entity, prey_quad_coord, position)) = prey_iter.filter(|(_, prey_quad_coord, _)| {
-                            prey_quad_coord.x >= quad_coord.x - 1 && prey_quad_coord.x <= quad_coord.x + 1 &&
-                                prey_quad_coord.y >= quad_coord.y - 1 && prey_quad_coord.y <= quad_coord.y + 1
-                        }).min_by_key(|(_, _, prey_position)| {
-                            let delta = prey_position.0 - position.0;
-                            let distance_sq: f32 = delta.length_squared();
-                            distance_sq as i32
-                        }) {
-                            debug!("Found prey!");
-                            hunger.hunger = 0.0; // We are instantly full
-                            *state = ActionState::Success;
-                        } else {
-                            debug!("No prey found!");
-                            /*
-                            Now we would want the AI to try to move this boid to some other quadrant.
-                            We will do that later.
-                             */
-                            *state = ActionState::Failure;
-                        }
-                    } else {
-                        debug!("No position found for actor!");
-                    }
-                }
-                // All Actions should make sure to handle cancellations!
-                ActionState::Cancelled => {
-                    debug!("Action was cancelled. Considering this a failure.");
-                    *state = ActionState::Failure;
-                }
-                _ => {}
-            }
-        }
-    }
-}
