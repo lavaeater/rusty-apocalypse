@@ -852,6 +852,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9eeb9144fc8bd8676f76c7660790ffce696fc80aade804b1c4e3d36a92f9df65"
 
 [[package]]
+name = "bevy_rand"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d49911d24815e1fd6cdc0a3761c462508776413cb3c245853657de522ae84d3f"
+dependencies = [
+ "bevy",
+ "getrandom",
+ "rand_chacha",
+ "rand_core",
+ "serde",
+]
+
+[[package]]
 name = "bevy_reflect"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3186,6 +3199,7 @@ checksum = "e6c10a63a0fa32252be49d21e7709d4d4baf8d231c2dbce1eaa8141b9b127d88"
 dependencies = [
  "ppv-lite86",
  "rand_core",
+ "serde",
 ]
 
 [[package]]
@@ -3195,6 +3209,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 dependencies = [
  "getrandom",
+ "serde",
 ]
 
 [[package]]
@@ -3346,9 +3361,11 @@ dependencies = [
  "bevy_ecs_ldtk",
  "bevy_hanabi",
  "bevy_prototype_lyon",
+ "bevy_rand",
  "bevy_xpbd_2d",
  "big-brain",
  "rand",
+ "rand_chacha",
 ]
 
 [[package]]

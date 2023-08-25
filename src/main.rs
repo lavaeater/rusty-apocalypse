@@ -3,13 +3,15 @@ use bevy::prelude::*;
 use bevy::utils::hashbrown::HashMap;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_prototype_lyon::plugin::ShapePlugin;
+use bevy_rand::plugin::EntropyPlugin;
 use bevy_xpbd_2d::prelude::*;
 use big_brain::{BigBrainPlugin, BigBrainSet};
-use rand::rngs::ThreadRng;
 use boids::{boid_steering, BoidDirection, BoidStuff, find_prey_action_system, hunger_scorer_system, hunger_system, hunt_prey_action_system, quad_boid_flocking, spawn_boids};
 use systems::*;
 use crate::boids::{Hunger, HuntTarget};
 use crate::components::{DirectionControl, QuadCoord, QuadStore};
+use bevy_rand::prelude::*;
+use rand_chacha::ChaCha8Rng;
 
 mod components;
 mod systems;
@@ -20,19 +22,16 @@ const METERS_PER_PIXEL: f32 = 1.0 / PIXELS_PER_METER;
 const CAMERA_SCALE: f32 = 1.0;
 const FIXED_TIME_STEP: f32 = 1.0 / 10.0;
 
-#[derive(Debug, Default, Resource)]
-struct RandomThingie(ThreadRng);
-
 fn main() {
     App::new()
         .insert_resource(Msaa::Sample4)
         .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
         .add_plugins(PhysicsPlugins::default())
         .add_plugins(ShapePlugin)
+        .add_plugins(EntropyPlugin::<ChaCha8Rng>::default())
         .insert_resource(QuadStore(HashMap::new()))
         .insert_resource(Gravity(Vec2::ZERO))
         .insert_resource(FixedTime::new_from_secs(FIXED_TIME_STEP))
-        .insert_resource(RandomThingie(rand::thread_rng()))
         .register_type::<DirectionControl>()
         .register_type::<BoidDirection>()
         .register_type::<BoidStuff>()

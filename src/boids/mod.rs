@@ -1,4 +1,4 @@
-use bevy::prelude::{Commands, Component, default, Entity, Query, Reflect, Res, SpriteBundle, Time, Transform, With};
+use bevy::prelude::{Commands, Component, default, Entity, Query, Reflect, Res, ResMut, SpriteBundle, Time, Transform, With};
 use big_brain::prelude::{ActionBuilder, ActionSpan, Actor, Score, ScorerBuilder, ScorerSpan, Thinker};
 use bevy::log::{debug, trace};
 use big_brain::actions::{ActionState, Steps};
@@ -10,13 +10,15 @@ use big_brain::pickers::FirstToScore;
 use bevy::core::Name;
 use rand::Rng;
 use std::ops::{AddAssign, Range};
+use bevy_rand::resource::GlobalEntropy;
+use rand_chacha::ChaCha8Rng;
 use crate::components::{Health, Prey, QuadCoord, QuadStore};
-use crate::{Layer, METERS_PER_PIXEL, RandomThingie};
+use crate::{Layer, METERS_PER_PIXEL};
 
 pub fn spawn_boids(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    rng: Res<RandomThingie>,
+    mut rng: ResMut<GlobalEntropy<ChaCha8Rng>>
 ) {
     for n in 0..5 {
         let x = rng.gen_range(-15.0..15.0);
@@ -197,10 +199,11 @@ pub fn hunger_system(time: Res<Time>, mut hungers: Query<&mut Hunger>) {
 
 pub fn attach_and_eat_action_system(
     mut query: Query<(&Actor, &mut ActionState, &AttackAndEat, &ActionSpan)>,
-    mut boid_query: Query<(&HuntTarget, &mut BoidStuff, &mut BoidAttack, &Position)>,
+    mut boid_query: Query<(&HuntTarget, &mut BoidStuff, &mut BoidAttack, &mut Hunger, &Position)>,
     mut target_query: Query<(&mut Health, &Position)>,
     time: Res<Time>,
-    rng: Res<RandomThingie>
+    mut rng: ResMut<GlobalEntropy<ChaCha8Rng>>,
+    mut commands: Commands
 ) {
     for (Actor(actor), mut state, _, _) in &mut query {
         /*
@@ -220,17 +223,23 @@ pub fn attach_and_eat_action_system(
             }
             ActionState::Executing => {
                 trace!("Do we have a hunt target?");
-                if let Ok((hunt_target, mut hunter_boid, mut boid_attack, hunter_position)) = boid_query.get_mut(*actor) {
+                if let Ok((hunt_target, mut hunter_boid, mut boid_attack, mut hunger, hunter_position)) = boid_query.get_mut(*actor) {
                     if let Ok((mut health, hunted_position)) = target_query.get_mut(hunt_target.0) {
                         let delta = hunted_position.0 - hunter_position.0;
                         hunter_boid.desired_direction = delta.normalize_or_zero();
 
-                        boid_attack.cool_down -= time.delta();
+                        boid_attack.cool_down -= time.delta().as_secs_f32();
                         if boid_attack.cool_down < 0.0 {
                             boid_attack.cool_down = boid_attack.cool_down_default.clone();
-                            if rng.0.gen_range(1..=100) <= *boid_attack.skill_level {
+                            if rng.gen_range(1..=100) <= boid_attack.skill_level {
                                 debug!("We hit our prey!");
-                                health.health -= rng.0.gen_range( *boid_attack.max_damage);
+                                let damage =  rng.gen_range( boid_attack.max_damage.clone());
+                                health.health -= damage;
+                                hunger.hunger -= damage as f32;
+                                if hunger.hunger < 10.0 || health.health <= 0 {
+                                    commands.entity(*actor).remove::<HuntTarget>();
+                                    *state = ActionState::Success;
+                                }
                             }
                         }
 
