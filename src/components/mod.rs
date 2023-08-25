@@ -32,12 +32,30 @@ pub struct PlayerStartBundle {
     player_start: PlayerStart,
 }
 
+#[derive(Debug, Default, Component, Reflect)]
+pub struct Health {
+    pub health: f32,
+    pub max: f32
+}
+
+impl Default for Health {
+    fn default() -> Self {
+        Self {
+            health: 100.0,
+            max: 100.0,
+        }
+    }
+}
+
+}
+
 #[derive(Bundle, Clone)]
 pub struct PlayerBundle {
     name: Name,
     camera_follow: CameraFollow,
     direction_control: DirectionControl,
     player: Player,
+    health: Health,
     prey: Prey,
     rigid_body: RigidBody,
     quad_coord: QuadCoord,
@@ -53,6 +71,7 @@ impl Default for PlayerBundle {
             camera_follow: CameraFollow {},
             direction_control: DirectionControl::default(),
             player: Player {},
+            health: Health::default(),
             prey: Prey {},
             rigid_body: RigidBody::Kinematic,
             quad_coord: QuadCoord::default(),

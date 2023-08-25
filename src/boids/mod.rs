@@ -10,15 +10,14 @@ use big_brain::pickers::FirstToScore;
 use bevy::core::Name;
 use rand::Rng;
 use std::ops::AddAssign;
-use crate::components::{Prey, QuadCoord, QuadStore};
-use crate::{Layer, METERS_PER_PIXEL};
+use crate::components::{Health, Prey, QuadCoord, QuadStore};
+use crate::{Layer, METERS_PER_PIXEL, RandomThingie};
 
 pub fn spawn_boids(
     mut commands: Commands,
-    asset_server: Res<AssetServer>) {
-    let mut rng = rand::thread_rng();
-
-
+    asset_server: Res<AssetServer>,
+    rng: Res<RandomThingie>,
+) {
     for n in 0..5 {
         let x = rng.gen_range(-15.0..15.0);
         let y = rng.gen_range(-15.0..15.0);
@@ -29,7 +28,7 @@ pub fn spawn_boids(
             // ...hunting it...
             .step(Hunt {})
             // ...and eating it.
-            .step(FeastOnCorpse { per_second: 10.0 });
+            .step(AttackAndEat { per_second: 10.0 });
 
         let thinker = Thinker::build()
             .label("Boid Thinker")
@@ -52,6 +51,12 @@ pub fn spawn_boids(
                 },
                 thinker,
                 Boid {},
+                BoidAttack {
+                    max_damage: rng.gen_range(5..=15),
+                    cool_down: 0.0,
+                    cool_down_default: rng.gen_range(1.0..=3.0),
+                    skill_level: rng.gen_range(15..=75),
+                },
                 QuadCoord::default(),
                 BoidStuff {
                     separation_factor: rng.gen_range(0.25..1.0),
@@ -190,6 +195,61 @@ pub fn hunger_system(time: Res<Time>, mut hungers: Query<&mut Hunger>) {
     }
 }
 
+pub fn attach_and_eat_action_system(
+    mut query: Query<(&Actor, &mut ActionState, &AttackAndEat, &ActionSpan)>,
+    mut boid_query: Query<(&HuntTarget, &mut BoidStuff, &mut BoidAttack, &Position)>,
+    mut target_query: Query<(&mut Health, &Position)>,
+    time: Res<Time>
+) {
+    for (Actor(actor), mut state, _, _) in &mut query {
+        /*
+        Hunting, how is it done?
+        Well, if we are using some kind of naïve grid sub-division system, I would say
+        we simply check the grid square we are in and the neighbouring ones for things we can
+        prey upon.
+
+        If we don't find any prey, we move to some quadrant.
+
+        Otherwise, I guess something happens.
+         */
+        match *state {
+            ActionState::Requested => {
+                debug!("Time to look for some prey!");
+                *state = ActionState::Executing;
+            }
+            ActionState::Executing => {
+                trace!("Do we have a hunt target?");
+                if let Ok((hunt_target, mut hunter_boid, mut boid_attack, hunter_position)) = boid_query.get_mut(*actor) {
+                    if let Ok((mut health, hunted_position)) = target_query.get_mut(hunt_target.0) {
+                        let delta = hunted_position.0 - hunter_position.0;
+                        hunter_boid.desired_direction = delta.normalize_or_zero();
+
+                        boid_attack.cool_down -= time.delta();
+                        if boid_attack.cool_down < 0.0 {
+                            boid_attack.cool_down = boid_attack.cool_down_default.clone();
+                            if(rng)
+                            health.health -= boid_attack.max_damage;
+                        }
+
+                    } else {
+                        debug!("We did not have a hunting target");
+                        *state = ActionState::Failure;
+                    }
+
+                } else {
+                    debug!("We did not have a hunting target");
+                    *state = ActionState::Failure;
+                }
+            }
+            // All Actions should make sure to handle cancellations!
+            ActionState::Cancelled => {
+                debug!("Action was cancelled. Considering this a failure.");
+                *state = ActionState::Failure;
+            }
+            _ => {}
+        }
+    }
+}
 
 pub fn hunt_prey_action_system(
     mut query: Query<(&Actor, &mut ActionState, &Hunt, &ActionSpan)>,
@@ -214,11 +274,14 @@ pub fn hunt_prey_action_system(
             }
             ActionState::Executing => {
                 trace!("Do we have a hunt target?");
-                //Most likely we do, otherwise we wouldn't end up here...
                 if let Ok((hunt_target, mut hunter_boid, hunter_position)) = boid_query.get_mut(*actor) {
                     let hunted_position = hunt_target_position_query.get(hunt_target.0).unwrap();
                     let delta = hunted_position.0 - hunter_position.0;
-                    hunter_boid.desired_direction = delta.normalize_or_zero();
+                    if delta.length_squared() < 5.0 {
+                        *state = ActionState::Success
+                    } else {
+                        hunter_boid.desired_direction = delta.normalize_or_zero();
+                    }
                 } else {
                     debug!("We did not have a hunting target");
                     *state = ActionState::Failure;
@@ -374,6 +437,17 @@ impl Default for BoidStuff {
 
 #[derive(Reflect)]
 #[derive(Copy, Clone, Debug, Component)]
+pub struct BoidAttack {
+    pub max_damage: i32,
+    pub cool_down: f32,
+    pub cool_down_default: f32,
+    pub skill_level: i32
+}
+
+
+
+#[derive(Reflect)]
+#[derive(Copy, Clone, Debug, Component)]
 pub struct BoidDirection {
     pub direction: Vector2,
     pub up: Vector2,
@@ -403,7 +477,7 @@ pub struct HuntTarget(pub Entity);
 pub struct Hunt {}
 
 #[derive(Clone, Component, Debug, ActionBuilder)]
-pub struct FeastOnCorpse {
+pub struct AttackAndEat {
     pub per_second: f32,
 }
 

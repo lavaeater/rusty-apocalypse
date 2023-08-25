@@ -5,6 +5,7 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_prototype_lyon::plugin::ShapePlugin;
 use bevy_xpbd_2d::prelude::*;
 use big_brain::{BigBrainPlugin, BigBrainSet};
+use rand::rngs::ThreadRng;
 use boids::{boid_steering, BoidDirection, BoidStuff, find_prey_action_system, hunger_scorer_system, hunger_system, hunt_prey_action_system, quad_boid_flocking, spawn_boids};
 use systems::*;
 use crate::boids::{Hunger, HuntTarget};
@@ -19,6 +20,9 @@ const METERS_PER_PIXEL: f32 = 1.0 / PIXELS_PER_METER;
 const CAMERA_SCALE: f32 = 1.0;
 const FIXED_TIME_STEP: f32 = 1.0 / 10.0;
 
+#[derive(Debug, Default, Resource)]
+struct RandomThingie(ThreadRng);
+
 fn main() {
     App::new()
         .insert_resource(Msaa::Sample4)
@@ -28,6 +32,7 @@ fn main() {
         .insert_resource(QuadStore(HashMap::new()))
         .insert_resource(Gravity(Vec2::ZERO))
         .insert_resource(FixedTime::new_from_secs(FIXED_TIME_STEP))
+        .insert_resource(RandomThingie(rand::thread_rng()))
         .register_type::<DirectionControl>()
         .register_type::<BoidDirection>()
         .register_type::<BoidStuff>()
