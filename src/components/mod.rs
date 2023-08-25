@@ -32,23 +32,20 @@ pub struct PlayerStartBundle {
     player_start: PlayerStart,
 }
 
-#[derive(Debug, Default, Component, Reflect)]
+#[derive(Debug, Component, Reflect)]
 pub struct Health {
-    pub health: f32,
-    pub max: f32
+    pub health: i32,
+    pub max: i32
 }
 
 impl Default for Health {
     fn default() -> Self {
         Self {
-            health: 100.0,
-            max: 100.0,
+            health: 100,
+            max: 100,
         }
     }
 }
-
-}
-
 #[derive(Bundle, Clone)]
 pub struct PlayerBundle {
     name: Name,

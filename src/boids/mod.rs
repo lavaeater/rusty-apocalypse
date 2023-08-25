@@ -9,7 +9,7 @@ use bevy::asset::AssetServer;
 use big_brain::pickers::FirstToScore;
 use bevy::core::Name;
 use rand::Rng;
-use std::ops::AddAssign;
+use std::ops::{AddAssign, Range};
 use crate::components::{Health, Prey, QuadCoord, QuadStore};
 use crate::{Layer, METERS_PER_PIXEL, RandomThingie};
 
@@ -199,7 +199,8 @@ pub fn attach_and_eat_action_system(
     mut query: Query<(&Actor, &mut ActionState, &AttackAndEat, &ActionSpan)>,
     mut boid_query: Query<(&HuntTarget, &mut BoidStuff, &mut BoidAttack, &Position)>,
     mut target_query: Query<(&mut Health, &Position)>,
-    time: Res<Time>
+    time: Res<Time>,
+    rng: Res<RandomThingie>
 ) {
     for (Actor(actor), mut state, _, _) in &mut query {
         /*
@@ -227,8 +228,10 @@ pub fn attach_and_eat_action_system(
                         boid_attack.cool_down -= time.delta();
                         if boid_attack.cool_down < 0.0 {
                             boid_attack.cool_down = boid_attack.cool_down_default.clone();
-                            if(rng)
-                            health.health -= boid_attack.max_damage;
+                            if rng.0.gen_range(1..=100) <= *boid_attack.skill_level {
+                                debug!("We hit our prey!");
+                                health.health -= rng.0.gen_range( *boid_attack.max_damage);
+                            }
                         }
 
                     } else {
@@ -436,9 +439,9 @@ impl Default for BoidStuff {
 }
 
 #[derive(Reflect)]
-#[derive(Copy, Clone, Debug, Component)]
+#[derive(Clone, Debug, Component)]
 pub struct BoidAttack {
-    pub max_damage: i32,
+    pub max_damage: Range<i32>,
     pub cool_down: f32,
     pub cool_down_default: f32,
     pub skill_level: i32
