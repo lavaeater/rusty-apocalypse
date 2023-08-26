@@ -1,3 +1,6 @@
+pub(crate) mod player;
+
+
 use bevy::core::Name;
 use bevy::math::Vec2;
 use bevy::prelude::{Bundle, Component, Entity, Reflect, Resource, SpriteSheetBundle};
@@ -6,6 +9,7 @@ use bevy_ecs_ldtk::{LdtkEntity, LdtkIntCell};
 use bevy_xpbd_2d::components::{Collider, CollisionLayers, Position};
 use bevy_xpbd_2d::math::Vector2;
 use bevy_xpbd_2d::prelude::{RigidBody, Rotation};
+use player::Player;
 use crate::{Layer, METERS_PER_PIXEL};
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Default, Component)]
@@ -22,14 +26,6 @@ pub struct Water;
 #[derive(Clone, Debug, Default, Bundle, LdtkIntCell)]
 pub struct WaterBundle {
     water: Water,
-}
-
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Default, Component)]
-pub struct PlayerStart;
-
-#[derive(Clone, Debug, Default, Bundle, LdtkIntCell)]
-pub struct PlayerStartBundle {
-    player_start: PlayerStart,
 }
 
 #[derive(Debug, Component, Reflect, Clone)]
@@ -81,9 +77,6 @@ impl Default for PlayerBundle {
         }
     }
 }
-
-#[derive(Component, Clone)]
-pub struct Player {}
 
 #[derive(Component, Clone)]
 pub struct Prey {}
