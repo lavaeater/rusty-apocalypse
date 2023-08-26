@@ -9,12 +9,12 @@ use bevy_xpbd_2d::components::Rotation;
 use bevy_prototype_lyon::path::ShapePath;
 use bevy::input::keyboard::KeyboardInput;
 use std::ops::AddAssign;
-use crate::components::{AimLine, DirectionControl, GameCam};
+use crate::components::{AimLine, PlayerControl, GameCam};
 use crate::components::player::Player;
 
 pub fn keyboard_input(
     mut key_evr: EventReader<KeyboardInput>,
-    mut query: Query<&mut DirectionControl, With<Player>>,
+    mut query: Query<&mut PlayerControl, With<Player>>,
 ) {
     use bevy::input::ButtonState;
     use bevy::prelude::KeyCode;
@@ -59,7 +59,7 @@ pub fn keyboard_input(
 }
 
 pub fn mouse_position(
-    mut q_direction: Query<&mut DirectionControl, With<Player>>,
+    mut q_direction: Query<&mut PlayerControl, With<Player>>,
     // need to get window dimensions
     q_windows: Query<&Window, With<PrimaryWindow>>,
     // query to get camera transform
@@ -92,7 +92,7 @@ pub fn add_mouse_aim_line(mut commands: Commands) {
 }
 
 pub fn draw_mouse_aim(
-    q_mouse_aim: Query<(&Transform, &DirectionControl), With<Player>>,
+    q_mouse_aim: Query<(&Transform, &PlayerControl), With<Player>>,
     mut query: Query<&mut Path, With<AimLine>>,
 ) {
     let (transform, direction_control) = q_mouse_aim.single();
@@ -104,7 +104,7 @@ pub fn draw_mouse_aim(
 pub fn mouse_look(
     mut query: Query<(
         &mut Rotation,
-        &mut DirectionControl,
+        &mut PlayerControl,
         &Transform), With<Player>>,
 ) {
     if let Ok((

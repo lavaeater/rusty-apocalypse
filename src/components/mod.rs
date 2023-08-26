@@ -46,7 +46,7 @@ impl Default for Health {
 pub struct PlayerBundle {
     name: Name,
     camera_follow: CameraFollow,
-    direction_control: DirectionControl,
+    direction_control: PlayerControl,
     player: Player,
     health: Health,
     prey: Prey,
@@ -62,7 +62,7 @@ impl Default for PlayerBundle {
         Self {
             name: Name::from("Player".to_string()),
             camera_follow: CameraFollow {},
-            direction_control: DirectionControl::default(),
+            direction_control: PlayerControl::default(),
             player: Player {},
             health: Health::default(),
             prey: Prey {},
@@ -86,7 +86,7 @@ pub struct AimLine {}
 
 #[derive(Reflect)]
 #[derive(Copy, Clone, Debug, Component)]
-pub struct DirectionControl {
+pub struct PlayerControl {
     pub direction: Vector2,
     pub aim_direction: Vector2,
     pub up: Vector2,
@@ -94,9 +94,11 @@ pub struct DirectionControl {
     pub aim_degrees: f32,
     pub mouse_position: Vector2,
     pub force_scale: f32,
+    pub trigger_pulled: bool,
+
 }
 
-impl Default for DirectionControl {
+impl Default for PlayerControl {
     fn default() -> Self {
         Self {
             direction: Vector2::ZERO,
@@ -106,6 +108,7 @@ impl Default for DirectionControl {
             aim_degrees: 0.0,
             mouse_position: Vector2::ZERO,
             force_scale: 10.0,
+            trigger_pulled: false,
         }
     }
 }

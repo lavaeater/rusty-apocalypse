@@ -9,9 +9,11 @@ use big_brain::{BigBrainPlugin, BigBrainSet};
 use boids::{boid_steering, BoidDirection, BoidStuff, find_prey_action_system, hunger_scorer_system, hunger_system, hunt_prey_action_system, quad_boid_flocking, spawn_boids};
 use systems::*;
 use crate::boids::{attack_and_eat_action_system, Hunger, HuntTarget};
-use crate::components::{DirectionControl, Health, QuadCoord, QuadStore};
+use crate::components::{PlayerControl, Health, QuadCoord, QuadStore};
 use rand_chacha::ChaCha8Rng;
+use systems::camera::camera_follow;
 use systems::input::{add_mouse_aim_line, draw_mouse_aim, keyboard_input, mouse_look, mouse_position};
+use systems::movement::{linear_velocity_control_boid, linear_velocity_control_player};
 use systems::startup::{load_background, spawn_camera, spawn_player};
 
 mod components;
@@ -33,7 +35,7 @@ fn main() {
         .insert_resource(QuadStore(HashMap::new()))
         .insert_resource(Gravity(Vec2::ZERO))
         .insert_resource(FixedTime::new_from_secs(FIXED_TIME_STEP))
-        .register_type::<DirectionControl>()
+        .register_type::<PlayerControl>()
         .register_type::<BoidDirection>()
         .register_type::<BoidStuff>()
         .register_type::<QuadCoord>()
