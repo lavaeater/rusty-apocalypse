@@ -18,6 +18,7 @@ use systems::input::{add_mouse_aim_line, draw_mouse_aim, keyboard_input, mouse_l
 use systems::movement::{linear_velocity_control_boid, linear_velocity_control_player};
 use systems::player::spawn_player;
 use systems::startup::{load_background, spawn_camera};
+use crate::components::weapon::WeaponDefs;
 
 mod components;
 mod systems;
@@ -38,6 +39,7 @@ fn main() {
         .insert_resource(QuadStore(HashMap::new()))
         .insert_resource(Gravity(Vec2::ZERO))
         .insert_resource(FixedTime::new_from_secs(FIXED_TIME_STEP))
+        .insert_resource(WeaponDefs::default())
         .register_type::<PlayerControl>()
         .register_type::<BoidDirection>()
         .register_type::<BoidStuff>()
@@ -87,4 +89,5 @@ enum Layer {
     Boid,
     Walls,
     Water,
+    Bullet
 }

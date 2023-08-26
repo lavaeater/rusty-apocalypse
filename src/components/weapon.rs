@@ -1,6 +1,7 @@
 use std::ops::Range;
+use std::sync::Arc;
 use bevy::core::Name;
-use bevy::prelude::{Bundle, Component, Entity, Reflect};
+use bevy::prelude::{Bundle, Component, Entity, Reflect, Resource};
 use bevy_xpbd_2d::components::{Collider, CollisionLayers, LinearVelocity, RigidBody};
 use bevy_xpbd_2d::math::Vector2;
 use bevy_xpbd_2d::prelude::Position;
@@ -22,19 +23,72 @@ pub enum AmmoType {
 }
 
 //Should perhaps be some kind of macro I guess?
-#[derive(Reflect, Clone)]
+#[derive(Clone)]
 pub struct WeaponDef {
     pub name: String,
     pub damage: Range<i32>,
     pub ammo: i32,
     pub rof: f32,
-    pub ammo_type: AmmoType,
+    pub ammo_type: Arc<AmmoType>,
 }
 
-#[derive(Reflect, Clone)]
+impl WeaponDef {
+    pub fn rof_to_cooldown(&self) -> f32 {
+        1.0 / self.rof
+    }
+}
+
+#[derive(Clone)]
 pub struct Weapon {
-    pub weapon_def: WeaponDef,
+    pub weapon_def: Arc<WeaponDef>,
     pub ammo_left: i32,
+}
+
+#[derive(Resource)]
+pub struct WeaponDefs {
+    pub defs: Vec<Arc<WeaponDef>>,
+}
+
+impl Default for WeaponDefs {
+    fn default() -> Self {
+        Self {
+            defs: vec![
+                Arc::new(
+                WeaponDef {
+                    name: "Pistol".to_string(),
+                    damage: 1..2,
+                    ammo: 10,
+                    rof: 2.0,
+                    ammo_type: Arc::new(AmmoType::Bullet("Bullet".to_string())),
+                }),
+                Arc::new(
+                    WeaponDef {
+                    name: "Rocket Launcher".to_string(),
+                    damage: 10..20,
+                    ammo: 3,
+                    rof: 1.0,
+                    ammo_type: Arc::new(AmmoType::Rocket("Rocket".to_string())),
+                }),
+                Arc::new(
+                    WeaponDef {
+                    name: "Grenade Launcher".to_string(),
+                    damage: 10..20,
+                    ammo: 3,
+                    rof: 1.0,
+                    ammo_type: Arc::new(AmmoType::Grenade("Grenade".to_string())),
+                }),
+            ],
+        }
+    }
+}
+
+impl Weapon {
+    pub fn new(weapon_def: &Arc<WeaponDef>) -> Self {
+        Self {
+            weapon_def: Arc::clone( weapon_def),
+            ammo_left: weapon_def.ammo.clone()
+        }
+    }
 }
 
 #[derive(Component, Clone)]
@@ -44,6 +98,11 @@ pub struct CurrentWeapon {
 }
 
 impl CurrentWeapon {
+    pub fn set_weapon(&mut self, weapon: Weapon) {
+        self.time_to_next_shot = weapon.weapon_def.rof_to_cooldown();
+        self.weapon = Some(weapon);
+    }
+
     pub fn can_fire(&self) -> bool {
         self.weapon.is_some() && self.time_to_next_shot <= 0.0
     }

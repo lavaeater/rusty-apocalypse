@@ -52,7 +52,10 @@ impl Default for PlayerBundle {
             }),
             collider: Collider::cuboid(16.0 * METERS_PER_PIXEL, 8.0 * METERS_PER_PIXEL),
             collision_layers: CollisionLayers::new([Layer::Player], [Layer::Walls, Layer::Water]),
-            current_weapon: CurrentWeapon::default(),
+            current_weapon: CurrentWeapon {
+                weapon: None,
+                time_to_next_shot: 0.0,
+            },
         }
     }
 }

@@ -2,11 +2,13 @@ use bevy::prelude::{Commands, default, Res, SpriteBundle, Transform};
 use bevy::asset::AssetServer;
 use bevy::math::Vec3;
 use crate::components::player::PlayerBundle;
+use crate::components::weapon::WeaponDefs;
 use crate::METERS_PER_PIXEL;
 
 pub fn spawn_player(
     mut commands: Commands,
-    asset_server: Res<AssetServer>) {
+    asset_server: Res<AssetServer>,
+    weapon_definitions: Res<WeaponDefs>) {
     commands
         .spawn((
             SpriteBundle {
