@@ -8,9 +8,8 @@ use bevy_xpbd_2d::prelude::*;
 use big_brain::{BigBrainPlugin, BigBrainSet};
 use boids::{boid_steering, BoidDirection, BoidStuff, find_prey_action_system, hunger_scorer_system, hunger_system, hunt_prey_action_system, quad_boid_flocking, spawn_boids};
 use systems::*;
-use crate::boids::{Hunger, HuntTarget};
+use crate::boids::{attack_and_eat_action_system, Hunger, HuntTarget};
 use crate::components::{DirectionControl, QuadCoord, QuadStore};
-use bevy_rand::prelude::*;
 use rand_chacha::ChaCha8Rng;
 
 mod components;
@@ -68,7 +67,7 @@ fn main() {
         .add_systems(
             PreUpdate,
             (
-                (find_prey_action_system, hunt_prey_action_system).in_set(BigBrainSet::Actions),
+                (find_prey_action_system, hunt_prey_action_system, attack_and_eat_action_system).in_set(BigBrainSet::Actions),
                 hunger_scorer_system.in_set(BigBrainSet::Scorers),
             ),
         ).run();

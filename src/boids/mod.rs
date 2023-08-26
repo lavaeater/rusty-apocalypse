@@ -54,7 +54,7 @@ pub fn spawn_boids(
                 thinker,
                 Boid {},
                 BoidAttack {
-                    max_damage: rng.gen_range(5..=15),
+                    max_damage: (5..rng.gen_range(10..=20)),
                     cool_down: 0.0,
                     cool_down_default: rng.gen_range(1.0..=3.0),
                     skill_level: rng.gen_range(15..=75),
@@ -197,7 +197,7 @@ pub fn hunger_system(time: Res<Time>, mut hungers: Query<&mut Hunger>) {
     }
 }
 
-pub fn attach_and_eat_action_system(
+pub fn attack_and_eat_action_system(
     mut query: Query<(&Actor, &mut ActionState, &AttackAndEat, &ActionSpan)>,
     mut boid_query: Query<(&HuntTarget, &mut BoidStuff, &mut BoidAttack, &mut Hunger, &Position)>,
     mut target_query: Query<(&mut Health, &Position)>,

@@ -32,7 +32,7 @@ pub struct PlayerStartBundle {
     player_start: PlayerStart,
 }
 
-#[derive(Debug, Component, Reflect)]
+#[derive(Debug, Component, Reflect, Clone)]
 pub struct Health {
     pub health: i32,
     pub max: i32
