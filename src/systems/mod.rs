@@ -1,27 +1,15 @@
-use std::ops::{AddAssign};
-use crate::components::{CameraFollow, Player, GameCam, DirectionControl, AimLine, Boid, BoidStuff, BoidDirection};
-use crate::{CAMERA_SCALE, Layer, METERS_PER_PIXEL, PIXELS_PER_METER};
-use bevy::asset::{AssetServer};
+use std::ops::AddAssign;
+use crate::components::{AimLine, CameraFollow, DirectionControl, GameCam, Player, PlayerBundle, QuadCoord, QuadStore};
+use crate::{CAMERA_SCALE, METERS_PER_PIXEL, PIXELS_PER_METER};
+use bevy::asset::AssetServer;
+use bevy::core::Name;
 use bevy::input::keyboard::KeyboardInput;
 use bevy::math::{Rect, Vec2, Vec3};
-use bevy::prelude::{
-    default,
-    Camera2dBundle,
-    Commands,
-    EventReader,
-    OrthographicProjection,
-    Query,
-    Res,
-    SpriteBundle,
-    Transform,
-    With,
-    Without,
-    Camera,
-    GlobalTransform,
-    Color};
-use bevy::render::camera::{ScalingMode};
+use bevy::prelude::{Camera, Camera2dBundle, Color, Commands, default, Entity, EventReader, GlobalTransform, OrthographicProjection, Query, Res, ResMut, SpriteBundle, Transform, With, Without};
+use bevy::render::camera::ScalingMode;
+use bevy::utils::HashSet;
 use bevy_xpbd_2d::components::{
-    Collider, CollisionLayers, ExternalForce, Position, RigidBody};
+    ExternalForce, Position};
 use bevy_xpbd_2d::prelude::{LinearVelocity, Rotation};
 use bevy::window::{PrimaryWindow, Window};
 use bevy_prototype_lyon::draw::{Fill, Stroke};
@@ -29,8 +17,7 @@ use bevy_prototype_lyon::entity::{Path, ShapeBundle};
 use bevy_prototype_lyon::geometry::GeometryBuilder;
 use bevy_prototype_lyon::path::ShapePath;
 use bevy_prototype_lyon::shapes;
-use bevy_xpbd_2d::math::Vector2;
-use rand::Rng;
+use crate::boids::{Boid, BoidDirection};
 
 pub fn load_background(
     mut commands: Commands,
@@ -60,8 +47,6 @@ pub fn spawn_player(
     asset_server: Res<AssetServer>) {
     commands
         .spawn((
-            CameraFollow {},
-            DirectionControl::default(),
             SpriteBundle {
                 transform: Transform::from_xyz(
                     0.0,
@@ -76,62 +61,13 @@ pub fn spawn_player(
                 texture: asset_server.load("sprites/person.png"),
                 ..default()
             },
-            Player {},
-            RigidBody::Kinematic,
-            Position::from(Vec2 {
-                x: 0.0,
-                y: 0.0,
-            }),
-            Collider::cuboid(16.0 * METERS_PER_PIXEL, 8.0 * METERS_PER_PIXEL),
-            CollisionLayers::new([Layer::Player], [Layer::Walls, Layer::Water]),
+            PlayerBundle::default(),
         ));
-}
-
-pub fn spawn_boids(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>) {
-    let mut rng = rand::thread_rng();
-    for _ in 0..100 {
-        let x = rng.gen_range(-250.0..250.0);
-        let y = rng.gen_range(-250.0..250.0);
-        commands
-            .spawn((
-                BoidDirection {
-                    force_scale: 5.0,
-                    ..default()
-                },
-                Boid {},
-                BoidStuff::default(),
-                SpriteBundle {
-                    transform: Transform::from_xyz(
-                        x,
-                        y,
-                        2.0,
-                    )
-                        .with_scale(Vec3::new(
-                            METERS_PER_PIXEL,
-                            METERS_PER_PIXEL,
-                            1.0,
-                        )),
-                    texture: asset_server.load("sprites/boid.png"),
-                    ..default()
-                },
-                RigidBody::Kinematic,
-                Position::from(Vec2 {
-                    x,
-                    y,
-                }),
-                Collider::triangle(
-                    Vec2::new(0.0, 8.0 * METERS_PER_PIXEL),
-                    Vec2::new(8.0 * METERS_PER_PIXEL, -8.0 * METERS_PER_PIXEL),
-                    Vec2::new(-8.0 * METERS_PER_PIXEL, -8.0 * METERS_PER_PIXEL)),
-                CollisionLayers::new([Layer::Boid], [Layer::Player]),
-            ));
-    }
 }
 
 pub fn spawn_camera(mut commands: Commands) {
     commands.spawn((
+        Name::from("Camera".to_string()),
         Camera2dBundle {
             projection: OrthographicProjection {
                 scale: CAMERA_SCALE,
@@ -280,101 +216,6 @@ pub fn draw_mouse_aim(
     *path = ShapePath::build_as(&line)
 }
 
-pub fn boid_steering(mut query: Query<(
-    &mut BoidDirection,
-    &mut Rotation,
-    &BoidStuff,
-    &Transform,
-    &Position), With<Boid>>) {
-    let mut iter = query.iter_mut();
-    while let Some((mut direction_control, mut rotation, boid_stuff, transform, position)) = iter.next() {
-        direction_control.up = Vec2::new(transform.up().x, transform.up().y);
-        let cohesion_direction = (boid_stuff.flock_center - position.0).normalize_or_zero() * boid_stuff.cohesion_factor;
-        let separation_direction = if boid_stuff.separation_boids > 0 { boid_stuff.separation_vector.normalize_or_zero() * boid_stuff.separation_factor } else { Vec2::ZERO };
-        let alignment_direction = if boid_stuff.alignment_boids > 0 { boid_stuff.alignment_direction * boid_stuff.alignment_factor } else { Vec2::ZERO };
-        direction_control.direction = direction_control.direction.lerp (((cohesion_direction + separation_direction + alignment_direction) / 3.0).normalize_or_zero(), 0.15);
-
-        let target_up = direction_control.up.lerp(direction_control.direction, 0.5);
-        let to_add = Rotation::from_radians(
-            target_up
-                .angle_between(
-                    direction_control
-                        .direction
-                )
-        );
-        rotation.add_assign(to_add);
-    }
-}
-
-
-pub fn boid_flocking(
-    mut query: Query<(
-        &Position,
-        &BoidDirection,
-        &mut BoidStuff
-    )>
-) {
-    let mut pre_iter = query.iter_mut();
-    while let Some((position, boid_direction, mut boid_stuff)) = pre_iter.next() {
-        boid_stuff.flock_center = Vector2::ZERO;
-        boid_stuff.cohesion_boids = 0;
-        boid_stuff.separation_vector = Vector2::ZERO;
-        boid_stuff.separation_boids = 0;
-        boid_stuff.alignment_boids = 0;
-        boid_stuff.alignment_direction = Vector2::ZERO;
-    }
-
-    let mut iter_combos = query.iter_combinations_mut();
-    while let Some([(
-        position_a,
-        boid_direction_a,
-        mut boid_stuff_a), (
-        position_b,
-        boid_direction_b,
-        mut boid_stuff_b)]) =
-        iter_combos.fetch_next()
-    {
-        // get a vector pointing from a to b
-        let delta_a: Vec2 = position_b.0 - position_a.0;
-        let delta_b = delta_a * -1.0;
-        let distance_sq: f32 = delta_a.length_squared();
-        if distance_sq < boid_stuff_a.cohesion_distance {
-            // cohesion
-            boid_stuff_a.flock_center += position_b.0;
-            boid_stuff_a.cohesion_boids += 1;
-            boid_stuff_b.flock_center += position_a.0;
-            boid_stuff_b.cohesion_boids += 1;
-
-            if distance_sq < boid_stuff_a.separation_distance {
-                boid_stuff_a.separation_vector += delta_b;
-                boid_stuff_a.separation_boids += 1;
-                boid_stuff_b.separation_vector += delta_a;
-                boid_stuff_b.separation_boids += 1;
-            }
-        }
-        if distance_sq < boid_stuff_a.alignment_distance {
-            boid_stuff_a.alignment_direction += boid_direction_b.direction;
-            boid_stuff_a.alignment_boids += 1;
-            boid_stuff_b.alignment_direction += boid_direction_a.direction;
-            boid_stuff_b.alignment_boids += 1;
-        }
-    }
-    let mut iter = query.iter_mut();
-    while let Some((position,boid_direction, mut boid_stuff)) = iter.next() {
-        if boid_stuff.cohesion_boids > 0 {
-            // boid_stuff.cohesion_center += position.0;
-            // boid_stuff.cohesion_boids += 1; // Add self
-            boid_stuff.flock_center = boid_stuff.flock_center / boid_stuff.cohesion_boids as f32;
-        }
-        if boid_stuff.separation_boids > 0 {
-            boid_stuff.separation_vector = boid_stuff.separation_vector / boid_stuff.separation_boids as f32;
-        }
-        if boid_stuff.alignment_boids > 0 {
-            boid_stuff.alignment_direction = boid_stuff.alignment_direction / boid_stuff.alignment_boids as f32;
-        }
-    }
-}
-
 pub fn mouse_look(
     mut query: Query<(
         &mut Rotation,
@@ -409,3 +250,36 @@ pub fn mouse_look(
         rotation.add_assign(to_add);
     }
 }
+
+pub fn naive_quad_system(
+    mut query: Query<(Entity, &Position, &mut QuadCoord)>,
+    mut quad_store: ResMut<QuadStore>,
+) {
+    let mut iter = query.iter_mut();
+    while let Some((entity, position, mut quad_coord)) = iter.next() {
+        let new_coord = QuadCoord::new(
+            (position.0.x / 25.0).floor() as i32,
+            (position.0.y / 25.0).floor() as i32,
+        );
+
+        if !new_coord.eq(&quad_coord) {
+            if !quad_store.0.contains_key(&new_coord) {
+                quad_store.0.insert(new_coord, HashSet::new());
+            }
+            let old_coord = quad_coord.clone();
+            if quad_store.0.contains_key(&old_coord) {
+                let set = quad_store.0.get_mut(&old_coord).unwrap();
+                set.remove(&entity);
+                if set.is_empty() {
+                    quad_store.0.remove(&old_coord);
+                }
+            }
+
+            quad_store.0.get_mut(&new_coord).unwrap().insert(entity);
+
+            quad_coord.x = new_coord.x;
+            quad_coord.y = new_coord.y;
+        }
+    }
+}
+
