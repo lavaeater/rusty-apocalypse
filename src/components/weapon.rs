@@ -1,5 +1,4 @@
 use std::ops::Range;
-use std::sync::Arc;
 use bevy::core::Name;
 use bevy::prelude::{Bundle, Component, Entity, Reflect, Resource};
 use bevy_xpbd_2d::components::{Collider, CollisionLayers, LinearVelocity, RigidBody};
@@ -29,86 +28,94 @@ pub struct WeaponDef {
     pub damage: Range<i32>,
     pub ammo: i32,
     pub rof: f32,
-    pub ammo_type: Arc<AmmoType>,
+    pub ammo_type: AmmoType,
 }
 
 impl WeaponDef {
+    pub fn create_weapon(&self) -> Weapon {
+        Weapon::new(&self)
+    }
+}
+
+impl Weapon {
     pub fn rof_to_cooldown(&self) -> f32 {
         1.0 / self.rof
     }
-
 }
 
-pub fn create_weapon_arc(weapon_def: Arc<WeaponDef>) -> Arc<Weapon> {
-    Arc::new(create_weapon(weapon_def))
-}
 
-pub fn create_weapon(weapon_def: Arc<WeaponDef>) -> Weapon {
-    Weapon::new(Arc::clone(&weapon_def))
-}
 
-#[derive(Clone)]
+
+#[derive(Clone, Reflect)]
 pub struct Weapon {
-    pub weapon_def: Arc<WeaponDef>,
     pub ammo_left: i32,
+    pub name: String,
+    pub damage: Range<i32>,
+    pub current_ammo: i32,
+    pub max_ammo: i32,
+    pub rof: f32,
+    pub ammo_type: AmmoType,
 }
+
 
 #[derive(Resource)]
 pub struct WeaponDefs {
-    pub defs: Vec<Arc<WeaponDef>>,
+    pub defs: Vec<WeaponDef>,
 }
 
 impl Default for WeaponDefs {
     fn default() -> Self {
         Self {
             defs: vec![
-                Arc::new(
                 WeaponDef {
                     name: "Pistol".to_string(),
                     damage: 1..2,
                     ammo: 10,
                     rof: 2.0,
-                    ammo_type: Arc::new(AmmoType::Bullet("Bullet".to_string())),
-                }),
-                Arc::new(
-                    WeaponDef {
+                    ammo_type: AmmoType::Bullet("Bullet".to_string()),
+                },
+                WeaponDef {
                     name: "Rocket Launcher".to_string(),
                     damage: 10..20,
                     ammo: 3,
                     rof: 1.0,
-                    ammo_type: Arc::new(AmmoType::Rocket("Rocket".to_string())),
-                }),
-                Arc::new(
-                    WeaponDef {
+                    ammo_type: AmmoType::Rocket("Rocket".to_string()),
+                },
+                WeaponDef {
                     name: "Grenade Launcher".to_string(),
                     damage: 10..20,
                     ammo: 3,
                     rof: 1.0,
-                    ammo_type: Arc::new(AmmoType::Grenade("Grenade".to_string())),
-                }),
+                    ammo_type: AmmoType::Grenade("Grenade".to_string()),
+                },
             ],
         }
     }
 }
 
 impl Weapon {
-    pub fn new(weapon_def: Arc<WeaponDef>) -> Self {
+    pub fn new(weapon_def: &WeaponDef) -> Self {
         Self {
-            weapon_def: Arc::clone(&weapon_def),
-            ammo_left: weapon_def.ammo.clone()
+            ammo_left: weapon_def.ammo.clone(),
+            name: weapon_def.name.clone(),
+            damage: weapon_def.damage.clone(),
+            current_ammo: weapon_def.ammo.clone(),
+            rof: weapon_def.rof.clone(),
+            ammo_type: weapon_def.ammo_type.clone(),
+            max_ammo: weapon_def.ammo.clone(),
         }
     }
 }
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Reflect)]
 pub struct CurrentWeapon {
-    pub weapon: Option<Arc<Weapon>>,
+    pub weapon: Option<Weapon>,
     pub time_to_next_shot: f32,
 }
 
 impl CurrentWeapon {
-    pub fn set_weapon(&mut self, weapon: Arc<Weapon>) {
-        self.time_to_next_shot = weapon.weapon_def.rof_to_cooldown();
+    pub fn set_weapon(&mut self, weapon: Weapon) {
+        self.time_to_next_shot = weapon.rof_to_cooldown();
         self.weapon = Some(weapon);
     }
 
@@ -118,7 +125,7 @@ impl CurrentWeapon {
     pub fn fire(&mut self) {
         if let Some(weapon) = self.weapon.as_mut() {
             weapon.ammo_left -= 1;
-            self.time_to_next_shot = weapon.weapon_def.rof;
+            self.time_to_next_shot = weapon.rof_to_cooldown();
         }
     }
 

@@ -3,7 +3,7 @@ use bevy_xpbd_2d::components::Position;
 use bevy_xpbd_2d::prelude::{Collider, CollisionLayers};
 use crate::components::control::TriggerPulled;
 use crate::components::control::PlayerControl;
-use crate::components::weapon::{CurrentWeapon, ProjectileBundle, Shooter, Weapon};
+use crate::components::weapon::{CurrentWeapon, ProjectileBundle};
 use crate::Layer;
 
 pub fn shooting_system(

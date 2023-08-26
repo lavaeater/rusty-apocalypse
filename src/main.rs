@@ -18,7 +18,10 @@ use systems::input::{add_mouse_aim_line, draw_mouse_aim, keyboard_input, mouse_l
 use systems::movement::{linear_velocity_control_boid, linear_velocity_control_player};
 use systems::player::spawn_player;
 use systems::startup::{load_background, spawn_camera};
-use crate::components::weapon::WeaponDefs;
+use crate::components::player::WeaponInventory;
+use crate::components::weapon::{CurrentWeapon, WeaponDefs};
+use crate::systems::player::cycle_weapon_system;
+use crate::systems::shooting::shooting_system;
 
 mod components;
 mod systems;
@@ -47,6 +50,8 @@ fn main() {
         .register_type::<HuntTarget>()
         .register_type::<Hunger>()
         .register_type::<Health>()
+        .register_type::<CurrentWeapon>()
+        .register_type::<WeaponInventory>()
         .add_plugins(WorldInspectorPlugin::new())
         .add_plugins(BigBrainPlugin::new(PreUpdate))
         .add_systems(Startup,
@@ -65,6 +70,8 @@ fn main() {
         })
         .add_systems(Update, camera_follow)
         .add_systems(Update, keyboard_input)
+        .add_systems(Update, cycle_weapon_system)
+        .add_systems(Update, shooting_system)
         .add_systems(Update, mouse_position)
         .add_systems(Update, draw_mouse_aim)
         .add_systems(Update, mouse_look)

@@ -1,19 +1,35 @@
-use std::sync::Arc;
-use std::thread::current;
-use bevy::prelude::{Commands, default, Entity, Query, Res, SpriteBundle, Transform, With};
+use bevy::prelude::{Commands, default, Entity, Query, Res, SpriteBundle, Transform};
 use bevy::asset::AssetServer;
 use bevy::math::Vec3;
-use crate::components::control::CycleWeapon;
+use crate::components::control::{CycleDirection, CycleWeapon};
 use crate::components::player::{PlayerBundle, WeaponInventory};
-use crate::components::weapon::{create_weapon_arc, CurrentWeapon, WeaponDefs};
+use crate::components::weapon::{CurrentWeapon, WeaponDefs};
 use crate::METERS_PER_PIXEL;
 
-pub fn cycle_weapon(
+pub fn cycle_weapon_system(
     mut commands: Commands,
-    mut query: Query<(Entity, &WeaponInventory, &mut CurrentWeapon), With<CycleWeapon>>,
+    mut query: Query<(Entity, &mut WeaponInventory, &mut CurrentWeapon, &CycleWeapon)>,
 ) {
-    for (entity, mut weapon_inventory, mut current_weapon) in query.iter_mut() {
-        current_weapon.weapon = Some(Arc::clone(&weapon_inventory.weapons[0]));
+    for (entity, mut weapon_inventory, mut current_weapon, cycle) in query.iter_mut() {
+        match &current_weapon.weapon {
+            Some(weapon) => weapon_inventory.weapons.push_back(weapon.clone()),
+            None => {}
+        }
+        match cycle.direction{
+            CycleDirection::Forward => {
+                weapon_inventory.weapons.rotate_right(1);
+                if let Some(new_weapon) = weapon_inventory.weapons.pop_front() {
+                    current_weapon.set_weapon(new_weapon.clone());
+                }
+            }
+            CycleDirection::Backward => {
+                weapon_inventory.weapons.rotate_left(1);
+                if let Some(new_weapon) = weapon_inventory.weapons.pop_front() {
+                    current_weapon.set_weapon(new_weapon.clone());
+                }
+            }
+        }
+
         commands.entity(entity).remove::<CycleWeapon>();
     }
 }
@@ -40,8 +56,7 @@ pub fn spawn_player(
             },
             PlayerBundle {
                 weapon_inventory: WeaponInventory {
-                    weapons: vec![create_weapon_arc(Arc::clone(&weapon_definitions
-                        .defs[0]))],
+                    weapons: weapon_definitions.defs.iter().map(|def| def.create_weapon()).collect(),
                 },
                 ..Default::default()
             },

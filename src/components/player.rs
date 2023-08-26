@@ -1,9 +1,10 @@
-use std::sync::Arc;
+use std::collections::VecDeque;
 use bevy::prelude::{Bundle, Component};
 use bevy_ecs_ldtk::LdtkIntCell;
 use bevy::core::Name;
 use bevy_xpbd_2d::components::{Collider, CollisionLayers, Position, RigidBody};
 use bevy::math::Vec2;
+use bevy::reflect::Reflect;
 use crate::components::{CameraFollow, Health, Prey, QuadCoord};
 use crate::components::control::PlayerControl;
 use crate::{Layer, METERS_PER_PIXEL};
@@ -20,9 +21,9 @@ pub struct PlayerStartBundle {
 #[derive(Component, Clone)]
 pub struct Player {}
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Reflect)]
 pub struct WeaponInventory {
-    pub weapons: Vec<Arc<Weapon>>,
+    pub weapons: VecDeque<Weapon>,
 }
 
 #[derive(Bundle, Clone)]
@@ -64,7 +65,7 @@ impl Default for PlayerBundle {
                 time_to_next_shot: 0.0,
             },
             weapon_inventory: WeaponInventory {
-                weapons: vec![],
+                weapons: VecDeque::from(vec![])
             },
         }
     }
