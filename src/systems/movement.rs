@@ -1,6 +1,6 @@
 use bevy::prelude::{Query, With, Without};
 use bevy_xpbd_2d::components::{ExternalForce, LinearVelocity};
-use crate::boids::{Boid, BoidDirection};
+use crate::boids::components::{Boid, BoidDirection};
 use crate::components::PlayerControl;
 use crate::components::player::Player;
 

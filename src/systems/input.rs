@@ -1,4 +1,4 @@
-use bevy::prelude::{Camera, Color, Commands, default, EventReader, GlobalTransform, Query, Transform, Window, With};
+use bevy::prelude::{Camera, Color, Commands, default, Entity, EventReader, GlobalTransform, Query, Transform, Window, With};
 use bevy::window::PrimaryWindow;
 use bevy_prototype_lyon::shapes;
 use bevy::math::Vec2;
@@ -10,51 +10,59 @@ use bevy_prototype_lyon::path::ShapePath;
 use bevy::input::keyboard::KeyboardInput;
 use std::ops::AddAssign;
 use crate::components::{AimLine, PlayerControl, GameCam};
+use crate::components::control::TriggerPulled;
 use crate::components::player::Player;
 
 pub fn keyboard_input(
     mut key_evr: EventReader<KeyboardInput>,
-    mut query: Query<&mut PlayerControl, With<Player>>,
+    mut query: Query<(Entity, &mut PlayerControl), With<Player>>,
+    mut commands: Commands
 ) {
     use bevy::input::ButtonState;
     use bevy::prelude::KeyCode;
-    if let Ok(mut direction_control) = query.get_single_mut() {
+    if let Ok((entity, mut player_control)) = query.get_single_mut() {
         for ev in key_evr.iter() {
             // println!("{:?}:{:?}", ev.state, ev.key_code);
             match ev.state {
                 ButtonState::Pressed => match ev.key_code {
                     Some(KeyCode::A) => {
-                        direction_control.direction.x = -1.0;
+                        player_control.direction.x = -1.0;
                     }
                     Some(KeyCode::D) => {
-                        direction_control.direction.x = 1.0;
+                        player_control.direction.x = 1.0;
                     }
                     Some(KeyCode::W) => {
-                        direction_control.direction.y = 1.0;
+                        player_control.direction.y = 1.0;
                     }
                     Some(KeyCode::S) => {
-                        direction_control.direction.y = -1.0;
+                        player_control.direction.y = -1.0;
+                    }
+                    Some(KeyCode::Space) => {
+                        commands.entity(entity).insert(TriggerPulled {});
                     }
                     _ => {}
                 },
                 ButtonState::Released => match ev.key_code {
                     Some(KeyCode::A) => {
-                        direction_control.direction.x = 0.0;
+                        player_control.direction.x = 0.0;
                     }
                     Some(KeyCode::D) => {
-                        direction_control.direction.x = 0.0;
+                        player_control.direction.x = 0.0;
                     }
                     Some(KeyCode::W) => {
-                        direction_control.direction.y = 0.0;
+                        player_control.direction.y = 0.0;
                     }
                     Some(KeyCode::S) => {
-                        direction_control.direction.y = 0.0;
+                        player_control.direction.y = 0.0;
+                    }
+                    Some(KeyCode::Space) => {
+                        commands.entity(entity).remove::<TriggerPulled>();
                     }
                     _ => {}
                 }
             }
         }
-        direction_control.direction = direction_control.direction.normalize_or_zero();
+        player_control.direction = player_control.direction.normalize_or_zero();
     }
 }
 

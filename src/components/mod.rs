@@ -1,4 +1,5 @@
 pub(crate) mod player;
+pub(crate) mod control;
 
 
 use bevy::core::Name;
@@ -94,8 +95,6 @@ pub struct PlayerControl {
     pub aim_degrees: f32,
     pub mouse_position: Vector2,
     pub force_scale: f32,
-    pub trigger_pulled: bool,
-
 }
 
 impl Default for PlayerControl {
@@ -107,8 +106,7 @@ impl Default for PlayerControl {
             aim_rotation: Rotation::default(),
             aim_degrees: 0.0,
             mouse_position: Vector2::ZERO,
-            force_scale: 10.0,
-            trigger_pulled: false,
+            force_scale: 10.0
         }
     }
 }
