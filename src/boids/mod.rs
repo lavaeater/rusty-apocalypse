@@ -235,7 +235,7 @@ pub fn attack_and_eat_action_system(
                                 debug!("We hit our prey!");
                                 let damage =  rng.gen_range( boid_attack.max_damage.clone());
                                 health.health -= damage;
-                                hunger.hunger -= damage as f32;
+                                hunger.hunger -= (damage * 2 ) as f32;
                                 if hunger.hunger < 10.0 || health.health <= 0 {
                                     commands.entity(*actor).remove::<HuntTarget>();
                                     *state = ActionState::Success;

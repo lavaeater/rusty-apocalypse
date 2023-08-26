@@ -9,7 +9,7 @@ use big_brain::{BigBrainPlugin, BigBrainSet};
 use boids::{boid_steering, BoidDirection, BoidStuff, find_prey_action_system, hunger_scorer_system, hunger_system, hunt_prey_action_system, quad_boid_flocking, spawn_boids};
 use systems::*;
 use crate::boids::{attack_and_eat_action_system, Hunger, HuntTarget};
-use crate::components::{DirectionControl, QuadCoord, QuadStore};
+use crate::components::{DirectionControl, Health, QuadCoord, QuadStore};
 use rand_chacha::ChaCha8Rng;
 
 mod components;
@@ -37,6 +37,7 @@ fn main() {
         .register_type::<QuadCoord>()
         .register_type::<HuntTarget>()
         .register_type::<Hunger>()
+        .register_type::<Health>()
         .add_plugins(WorldInspectorPlugin::new())
         .add_plugins(BigBrainPlugin::new(PreUpdate))
         .add_systems(Startup,
