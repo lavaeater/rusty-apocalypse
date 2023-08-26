@@ -12,6 +12,7 @@ use crate::boids::{attack_and_eat_action_system, Hunger, HuntTarget};
 use crate::components::{DirectionControl, Health, QuadCoord, QuadStore};
 use rand_chacha::ChaCha8Rng;
 use systems::input::{add_mouse_aim_line, draw_mouse_aim, keyboard_input, mouse_look, mouse_position};
+use systems::startup::{load_background, spawn_camera, spawn_player};
 
 mod components;
 mod systems;
