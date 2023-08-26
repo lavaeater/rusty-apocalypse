@@ -2,6 +2,8 @@ pub(crate) mod input;
 pub(crate) mod startup;
 pub(crate) mod camera;
 pub(crate) mod movement;
+pub(crate) mod shooting;
+pub(crate) mod player;
 
 use crate::components::{QuadCoord, QuadStore};
 use bevy::prelude::{Entity, Query, ResMut};

@@ -9,8 +9,8 @@ use bevy_xpbd_2d::components::Rotation;
 use bevy_prototype_lyon::path::ShapePath;
 use bevy::input::keyboard::KeyboardInput;
 use std::ops::AddAssign;
-use crate::components::{AimLine, PlayerControl, GameCam};
-use crate::components::control::TriggerPulled;
+use crate::components::{AimLine, GameCam};
+use crate::components::control::{PlayerControl, TriggerPulled};
 use crate::components::player::Player;
 
 pub fn keyboard_input(
