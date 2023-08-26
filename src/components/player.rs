@@ -6,7 +6,7 @@ use bevy::math::Vec2;
 use crate::components::{CameraFollow, Health, Prey, QuadCoord};
 use crate::components::control::PlayerControl;
 use crate::{Layer, METERS_PER_PIXEL};
-use crate::components::weapon::Weapon;
+use crate::components::weapon::{CurrentWeapon, Weapon};
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Default, Component)]
 pub struct PlayerStart;
@@ -32,7 +32,7 @@ pub struct PlayerBundle {
     position: Position,
     collider: Collider,
     collision_layers: CollisionLayers,
-    weapon: Weapon,
+    current_weapon: CurrentWeapon,
 }
 
 impl Default for PlayerBundle {
@@ -52,7 +52,7 @@ impl Default for PlayerBundle {
             }),
             collider: Collider::cuboid(16.0 * METERS_PER_PIXEL, 8.0 * METERS_PER_PIXEL),
             collision_layers: CollisionLayers::new([Layer::Player], [Layer::Walls, Layer::Water]),
-            weapon: Weapon::default(),
+            current_weapon: CurrentWeapon::default(),
         }
     }
 }
