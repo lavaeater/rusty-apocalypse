@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use bevy::prelude::{Bundle, Component};
 use bevy_ecs_ldtk::LdtkIntCell;
 use bevy::core::Name;
@@ -19,20 +20,26 @@ pub struct PlayerStartBundle {
 #[derive(Component, Clone)]
 pub struct Player {}
 
+#[derive(Component, Clone)]
+pub struct WeaponInventory {
+    pub weapons: Vec<Arc<Weapon>>,
+}
+
 #[derive(Bundle, Clone)]
 pub struct PlayerBundle {
-    name: Name,
-    camera_follow: CameraFollow,
-    direction_control: PlayerControl,
-    player: Player,
-    health: Health,
-    prey: Prey,
-    rigid_body: RigidBody,
-    quad_coord: QuadCoord,
-    position: Position,
-    collider: Collider,
-    collision_layers: CollisionLayers,
-    current_weapon: CurrentWeapon,
+    pub name: Name,
+    pub camera_follow: CameraFollow,
+    pub direction_control: PlayerControl,
+    pub player: Player,
+    pub health: Health,
+    pub prey: Prey,
+    pub rigid_body: RigidBody,
+    pub quad_coord: QuadCoord,
+    pub position: Position,
+    pub collider: Collider,
+    pub collision_layers: CollisionLayers,
+    pub current_weapon: CurrentWeapon,
+    pub weapon_inventory: WeaponInventory,
 }
 
 impl Default for PlayerBundle {
@@ -55,6 +62,9 @@ impl Default for PlayerBundle {
             current_weapon: CurrentWeapon {
                 weapon: None,
                 time_to_next_shot: 0.0,
+            },
+            weapon_inventory: WeaponInventory {
+                weapons: vec![],
             },
         }
     }

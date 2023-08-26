@@ -10,7 +10,7 @@ use bevy_prototype_lyon::path::ShapePath;
 use bevy::input::keyboard::KeyboardInput;
 use std::ops::AddAssign;
 use crate::components::{AimLine, GameCam};
-use crate::components::control::{PlayerControl, TriggerPulled};
+use crate::components::control::{CycleDirection, CycleWeapon, PlayerControl, TriggerPulled};
 use crate::components::player::Player;
 
 pub fn keyboard_input(
@@ -22,7 +22,6 @@ pub fn keyboard_input(
     use bevy::prelude::KeyCode;
     if let Ok((entity, mut player_control)) = query.get_single_mut() {
         for ev in key_evr.iter() {
-            // println!("{:?}:{:?}", ev.state, ev.key_code);
             match ev.state {
                 ButtonState::Pressed => match ev.key_code {
                     Some(KeyCode::A) => {
@@ -43,6 +42,16 @@ pub fn keyboard_input(
                     _ => {}
                 },
                 ButtonState::Released => match ev.key_code {
+                    Some(KeyCode::Right) => {
+                        commands.entity(entity).insert(CycleWeapon {
+                            direction: CycleDirection::Forward,
+                        });
+                    }
+                    Some(KeyCode::Left) => {
+                        commands.entity(entity).insert(CycleWeapon {
+                            direction: CycleDirection::Backward,
+                        });
+                    }
                     Some(KeyCode::A) => {
                         player_control.direction.x = 0.0;
                     }

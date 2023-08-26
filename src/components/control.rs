@@ -5,6 +5,17 @@ use bevy_xpbd_2d::components::Rotation;
 #[derive(Component, Clone)]
 pub struct TriggerPulled {}
 
+#[derive(Clone)]
+pub enum CycleDirection {
+    Forward,
+    Backward,
+}
+
+#[derive(Component, Clone)]
+pub struct CycleWeapon {
+    pub direction: CycleDirection,
+}
+
 #[derive(Reflect)]
 #[derive(Copy, Clone, Debug, Component)]
 pub struct PlayerControl {

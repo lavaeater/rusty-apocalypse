@@ -36,6 +36,15 @@ impl WeaponDef {
     pub fn rof_to_cooldown(&self) -> f32 {
         1.0 / self.rof
     }
+
+}
+
+pub fn create_weapon_arc(weapon_def: Arc<WeaponDef>) -> Arc<Weapon> {
+    Arc::new(create_weapon(weapon_def))
+}
+
+pub fn create_weapon(weapon_def: Arc<WeaponDef>) -> Weapon {
+    Weapon::new(Arc::clone(&weapon_def))
 }
 
 #[derive(Clone)]
@@ -83,9 +92,9 @@ impl Default for WeaponDefs {
 }
 
 impl Weapon {
-    pub fn new(weapon_def: &Arc<WeaponDef>) -> Self {
+    pub fn new(weapon_def: Arc<WeaponDef>) -> Self {
         Self {
-            weapon_def: Arc::clone( weapon_def),
+            weapon_def: Arc::clone(&weapon_def),
             ammo_left: weapon_def.ammo.clone()
         }
     }
@@ -93,12 +102,12 @@ impl Weapon {
 
 #[derive(Component, Clone)]
 pub struct CurrentWeapon {
-    pub weapon: Option<Weapon>,
+    pub weapon: Option<Arc<Weapon>>,
     pub time_to_next_shot: f32,
 }
 
 impl CurrentWeapon {
-    pub fn set_weapon(&mut self, weapon: Weapon) {
+    pub fn set_weapon(&mut self, weapon: Arc<Weapon>) {
         self.time_to_next_shot = weapon.weapon_def.rof_to_cooldown();
         self.weapon = Some(weapon);
     }
