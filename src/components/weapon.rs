@@ -119,8 +119,12 @@ impl CurrentWeapon {
         self.weapon = Some(weapon);
     }
 
+    pub fn tick(&mut self, delta: f32) {
+        self.time_to_next_shot -= delta;
+    }
+
     pub fn can_fire(&self) -> bool {
-        self.weapon.is_some() && self.time_to_next_shot <= 0.0
+        self.weapon.is_some() && self.time_to_next_shot <= 0.0 && self.weapon.as_ref().unwrap().ammo_left > 0
     }
     pub fn fire(&mut self) {
         if let Some(weapon) = self.weapon.as_mut() {
@@ -129,7 +133,7 @@ impl CurrentWeapon {
         }
     }
 
-    pub fn fire_and_report_back(&mut self) -> bool {
+    pub fn did_we_fire(&mut self) -> bool {
         self.can_fire() && {
             self.fire();
             true
