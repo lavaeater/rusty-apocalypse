@@ -25,7 +25,7 @@ pub fn shooting_system(
                 ProjectileBundle::new(
                     "Bullet".to_string(),
                     *shooter_position,
-                    player_control.aim_direction * 1.0,
+                    player_control.aim_direction * 100.0,
                     Collider::ball(0.5),
                     CollisionLayers::new([Layer::Bullet], [Layer::Player, Layer::Boid]),
                     shooter,
