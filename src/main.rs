@@ -1,4 +1,3 @@
-
 use bevy::prelude::*;
 use bevy::utils::hashbrown::HashMap;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
@@ -60,8 +59,8 @@ fn main() {
                      spawn_camera)
         .add_systems(Startup,
                      spawn_player)
-        .add_systems(Startup,
-                     spawn_boids)
+        // .add_systems(Startup,
+        //              spawn_boids)
         .add_systems(Startup,
                      add_mouse_aim_line)
         .insert_resource(GizmoConfig {
@@ -96,5 +95,5 @@ enum Layer {
     Boid,
     Walls,
     Water,
-    Bullet
+    Bullet,
 }

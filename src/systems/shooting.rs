@@ -25,7 +25,7 @@ pub fn shooting_system(
                 ProjectileBundle::new(
                     "Bullet".to_string(),
                     *shooter_position,
-                    player_control.aim_direction * 100.0,
+                    player_control.aim_direction * 1.0,
                     Collider::ball(0.5),
                     CollisionLayers::new([Layer::Bullet], [Layer::Player, Layer::Boid]),
                     shooter,
@@ -34,14 +34,14 @@ pub fn shooting_system(
                     transform: Transform::from_xyz(
                         shooter_position.x,
                         shooter_position.y,
-                        3.0,
+                        1.0,
                     )
                         .with_scale(Vec3::new(
                             METERS_PER_PIXEL,
                             METERS_PER_PIXEL,
                             1.0,
                         )),
-                    texture: asset_server.load("sprites/person.png"),
+                    texture: asset_server.load("sprites/bullet.png"),
                     ..default()
                 },
             ));

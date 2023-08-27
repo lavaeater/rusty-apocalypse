@@ -17,7 +17,6 @@ pub fn cycle_weapon_system(
         }
         match cycle.direction{
             CycleDirection::Forward => {
-                weapon_inventory.weapons.rotate_right(1);
                 if let Some(new_weapon) = weapon_inventory.weapons.pop_front() {
                     current_weapon.set_weapon(new_weapon.clone());
                 }
