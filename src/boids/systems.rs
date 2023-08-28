@@ -21,9 +21,9 @@ pub fn spawn_boids(
     asset_server: Res<AssetServer>,
     mut rng: ResMut<GlobalEntropy<ChaCha8Rng>>
 ) {
-    for n in 0..5 {
-        let x = rng.gen_range(-15.0..15.0);
-        let y = rng.gen_range(-15.0..15.0);
+    for n in 0..1000 {
+        let x = rng.gen_range(-500..500) as f32;
+        let y = rng.gen_range(-500..500) as f32;
         let hunt_and_eat = Steps::build()
             .label("Hunt And Eat")
             // Try to find prey...
