@@ -53,7 +53,7 @@ pub fn spawn_more_boids(
             commands
                 .spawn((
                     thinker,
-                    Hunger::new(75.0, 2.0),
+                    Hunger::new(75.0, rng.gen_range(1..100) as f32 / 100.0),
                     BoidBundle::new(
                         format!("Boid {}", n),
                         Vec2::new(x, y),
@@ -118,7 +118,7 @@ pub fn spawn_boids(
         commands
             .spawn((
                 thinker,
-                Hunger::new(75.0, 2.0),
+                Hunger::new(75.0, rng.gen_range(1..100) as f32 / 100.0),
                 BoidBundle::new(
                     format!("Boid {}", n),
                     Vec2::new(x, y),

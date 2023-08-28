@@ -25,6 +25,7 @@ use crate::events::collisions::{BoidHitPlayerEvent, BulletHitBoidEvent, BulletHi
 use crate::systems::collisions::{bullet_hit_boid_listener, collision_event_listener};
 use crate::systems::input::mouse_key_input;
 use crate::systems::player::cycle_weapon_system;
+use crate::systems::quads::naive_quad_system;
 use crate::systems::shooting::shooting_system;
 
 mod components;
