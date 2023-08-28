@@ -1,6 +1,7 @@
 pub(crate) mod player;
 pub(crate) mod control;
 pub(crate) mod weapon;
+pub(crate) mod effects;
 
 use bevy::prelude::{Bundle, Component, Entity, Reflect, Resource, SpriteSheetBundle};
 use bevy::utils::{HashMap, HashSet};

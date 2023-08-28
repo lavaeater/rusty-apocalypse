@@ -11,7 +11,7 @@ use bevy::core::Name;
 use bevy_xpbd_2d::math::Vector2;
 use rand::Rng;
 use std::ops::AddAssign;
-use crate::components::{QuadCoord, QuadStore};
+use crate::components::{Health, QuadCoord, QuadStore};
 use crate::{Layer, METERS_PER_PIXEL};
 use crate::boids::ai::{AttackAndEat, FindPrey, Hunger, Hungry, Hunt};
 use crate::boids::components::{Boid, BoidAttack, BoidDirection, BoidStuff};
@@ -54,6 +54,7 @@ pub fn spawn_boids(
                 },
                 thinker,
                 Boid {},
+                Health::default(),
                 BoidAttack {
                     max_damage: (5..rng.gen_range(10..=20)),
                     cool_down: 0.0,

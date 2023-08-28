@@ -2,24 +2,24 @@ use bevy::prelude::{Entity, Event};
 
 #[derive(Event)]
 pub struct BulletHitBoidEvent {
-    bullet: Entity,
-    boid: Entity,
+    pub bullet: Entity,
+    pub boid: Entity,
 }
 
 #[derive(Event)]
 pub struct BulletHitWallEvent {
-    bullet: Entity,
-    wall: Entity,
+    pub bullet: Entity,
+    pub wall: Entity,
 }
 
 #[derive(Event)]
 pub struct BulletHitPlayerEvent {
-    bullet: Entity,
-    player: Entity,
+    pub bullet: Entity,
+    pub player: Entity,
 }
 
 #[derive(Event)]
 pub struct BoidHitPlayerEvent {
-    boid: Entity,
-    player: Entity,
+    pub boid: Entity,
+    pub player: Entity,
 }
