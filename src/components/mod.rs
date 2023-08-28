@@ -68,15 +68,17 @@ impl QuadCoord {
 }
 
 pub enum Rebuild {
-    Keep,
-    Grow,
-    Shrink,
+    KeepQuadSize,
+    ShrinkQuadSize,
+    GrowQuadSize,
 }
 
 #[derive(Resource)]
 pub struct QuadStore{
     pub entities: HashMap<QuadCoord, HashSet<Entity>>,
     pub quad_size: f32,
+    pub max_quad_size: f32,
+    pub min_quad_size: f32,
     pub max_entities: usize,
     pub min_entities: usize,
     pub largest_count: usize,

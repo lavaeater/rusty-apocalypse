@@ -176,22 +176,30 @@ pub fn naive_quad_system(
     let mut iter = query.iter_mut();
     let quad_store = quad_store.into_inner();
     match quad_store.rebuild_store {
-        Rebuild::Keep => {
+        Rebuild::KeepQuadSize => {
             quad_store.largest_count = 0;
         }
-        Rebuild::Grow => {
-            info!("Growing quad store");
-            quad_store.entities.clear();
-            quad_store.quad_size = quad_store.quad_size / 2.0;
-            quad_store.rebuild_store = Rebuild::Keep;
-            info!(quad_store.quad_size);
+        Rebuild::ShrinkQuadSize => {
+            if quad_store.quad_size <= quad_store.min_quad_size {
+                quad_store.rebuild_store = Rebuild::KeepQuadSize;
+            } else {
+                info!("Shrinking quad size");
+                quad_store.entities.clear();
+                quad_store.quad_size = (quad_store.quad_size / 2.0).clamp(quad_store.min_quad_size, quad_store.max_quad_size);
+                quad_store.rebuild_store = Rebuild::KeepQuadSize;
+                info!("Size: {:.2}", quad_store.quad_size);
+            }
         }
-        Rebuild::Shrink => {
-            info!("Shrinking quad store");
-            quad_store.entities.clear();
-            quad_store.quad_size = quad_store.quad_size * 2.0;
-            quad_store.rebuild_store = Rebuild::Keep;
-            info!(quad_store.quad_size);
+        Rebuild::GrowQuadSize => {
+            if quad_store.quad_size >= quad_store.max_quad_size {
+                quad_store.rebuild_store = Rebuild::KeepQuadSize;
+            } else {
+                info!("Growing quad size");
+                quad_store.entities.clear();
+                quad_store.quad_size = (quad_store.quad_size * 2.0).clamp(quad_store.min_quad_size, quad_store.max_quad_size);
+                quad_store.rebuild_store = Rebuild::KeepQuadSize;
+                info!("Size: {:.2}", quad_store.quad_size);
+            }
         }
     }
     while let Some((entity, position, mut quad_coord)) = iter.next() {
@@ -234,8 +242,8 @@ pub fn naive_quad_system(
         }
     }
     if quad_store.largest_count > quad_store.max_entities {
-        quad_store.rebuild_store = Rebuild::Grow;
+        quad_store.rebuild_store = Rebuild::ShrinkQuadSize;
     } else if quad_store.largest_count < quad_store.min_entities {
-        quad_store.rebuild_store = Rebuild::Shrink;
+        quad_store.rebuild_store = Rebuild::GrowQuadSize;
     }
 }

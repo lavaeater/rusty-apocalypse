@@ -1,4 +1,4 @@
-use bevy::prelude::{Commands, default, Entity, Query, Res, ResMut, SpriteBundle, Transform, With};
+use bevy::prelude::{Commands, default, Entity, info, Query, Res, ResMut, SpriteBundle, Transform, With};
 use bevy_xpbd_2d::components::{Position, Rotation};
 use bevy::math::{Vec2, Vec3};
 use bevy::asset::AssetServer;
@@ -23,37 +23,40 @@ pub fn spawn_more_boids(
     mut rng: ResMut<GlobalEntropy<ChaCha8Rng>>,
     time: Res<Time>,
     mut boid_settings: ResMut<BoidGenerationSettings>,
+    boid_count: Query<&Boid>,
 ) {
     boid_settings.time_left -= time.delta_seconds();
-    if (boid_settings.time_left < 0.0) {
+    if boid_settings.time_left < 0.0 {
+        let boid_count = boid_count.iter().count();
+        info!("Boid Count: {}", boid_count);
         boid_settings.time_left = boid_settings.cool_down;
         for n in 0..boid_settings.boids_to_generate {
-            let x = rng.gen_range(-1000..1000) as f32;
-            let y = rng.gen_range(-1000..1000) as f32;
+            let x = rng.gen_range(-200..200) as f32;
+            let y = rng.gen_range(-100..100) as f32;
 
-            let hunt_and_eat = Steps::build()
-                .label("Hunt And Eat")
-                // Try to find prey...
-                .step(FindPrey {})
-                // ...hunting it...
-                .step(Hunt {})
-                // ...and eating it.
-                .step(AttackAndEat { per_second: 10.0 });
-
-            let thinker = Thinker::build()
-                .label("Boid Thinker")
-                .picker(FirstToScore { threshold: 0.8 })
-                // Technically these are supposed to be ActionBuilders and
-                // ScorerBuilders, but our Clone impls simplify our code here.
-                .when(
-                    Hungry,
-                    hunt_and_eat,
-                );
+            // let hunt_and_eat = Steps::build()
+            //     .label("Hunt And Eat")
+            //     // Try to find prey...
+            //     .step(FindPrey {})
+            //     // ...hunting it...
+            //     .step(Hunt {})
+            //     // ...and eating it.
+            //     .step(AttackAndEat { per_second: 10.0 });
+            //
+            // let thinker = Thinker::build()
+            //     .label("Boid Thinker")
+            //     .picker(FirstToScore { threshold: 0.8 })
+            //     // Technically these are supposed to be ActionBuilders and
+            //     // ScorerBuilders, but our Clone impls simplify our code here.
+            //     .when(
+            //         Hungry,
+            //         hunt_and_eat,
+            //     );
 
             commands
                 .spawn((
-                    thinker,
-                    Hunger::new(75.0, rng.gen_range(1..100) as f32 / 100.0),
+                    // thinker,
+                    // Hunger::new(75.0, rng.gen_range(1..100) as f32 / 100.0),
                     BoidBundle::new(
                         format!("Boid {}", n),
                         Vec2::new(x, y),
@@ -94,30 +97,30 @@ pub fn spawn_boids(
     mut rng: ResMut<GlobalEntropy<ChaCha8Rng>>,
 ) {
     for n in 0..500 {
-        let x = rng.gen_range(-1000..1000) as f32;
-        let y = rng.gen_range(-1000..1000) as f32;
-        let hunt_and_eat = Steps::build()
-            .label("Hunt And Eat")
-            // Try to find prey...
-            .step(FindPrey {})
-            // ...hunting it...
-            .step(Hunt {})
-            // ...and eating it.
-            .step(AttackAndEat { per_second: 10.0 });
-
-        let thinker = Thinker::build()
-            .label("Boid Thinker")
-            .picker(FirstToScore { threshold: 0.8 })
-            // Technically these are supposed to be ActionBuilders and
-            // ScorerBuilders, but our Clone impls simplify our code here.
-            .when(
-                Hungry,
-                hunt_and_eat,
-            );
+        let x = rng.gen_range(-200..200) as f32;
+        let y = rng.gen_range(-100..100) as f32;
+        // let hunt_and_eat = Steps::build()
+        //     .label("Hunt And Eat")
+        //     // Try to find prey...
+        //     .step(FindPrey {})
+        //     // ...hunting it...
+        //     .step(Hunt {})
+        //     // ...and eating it.
+        //     .step(AttackAndEat { per_second: 10.0 });
+        //
+        // let thinker = Thinker::build()
+        //     .label("Boid Thinker")
+        //     .picker(FirstToScore { threshold: 0.8 })
+        //     // Technically these are supposed to be ActionBuilders and
+        //     // ScorerBuilders, but our Clone impls simplify our code here.
+        //     .when(
+        //         Hungry,
+        //         hunt_and_eat,
+        //     );
 
         commands
             .spawn((
-                thinker,
+                // thinker,
                 Hunger::new(75.0, rng.gen_range(1..100) as f32 / 100.0),
                 BoidBundle::new(
                     format!("Boid {}", n),

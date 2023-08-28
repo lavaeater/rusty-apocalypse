@@ -47,16 +47,18 @@ fn main() {
         .add_plugins(EntropyPlugin::<ChaCha8Rng>::default())
         .insert_resource(QuadStore {
             entities: HashMap::new(),
-            quad_size: 100.0,
+            quad_size: 128.0,
+            min_quad_size: 4.0,
+            max_quad_size: 512.0,
             max_entities: 100,
             largest_count: 0,
-            min_entities: 50,
-            rebuild_store: Rebuild::Keep
+            min_entities: 10,
+            rebuild_store: Rebuild::KeepQuadSize
         })
         .insert_resource(Gravity(Vec2::ZERO))
         .insert_resource(FixedTime::new_from_secs(FIXED_TIME_STEP))
         .insert_resource(WeaponDefs::default())
-        .insert_resource(BoidGenerationSettings::new( 1.0,  10 ))
+        .insert_resource(BoidGenerationSettings::new( 1.0,  100 ))
         .insert_resource(GizmoConfig {
             depth_bias: -1.0,
             ..default()
