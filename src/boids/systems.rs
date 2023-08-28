@@ -113,7 +113,7 @@ pub fn boid_steering(mut query: Query<(
         direction_control.direction = direction_control.direction.lerp(((cohesion_direction + separation_direction + alignment_direction + desired_direction) / 4.0).normalize_or_zero(), boid_stuff.turn_speed);
 
         //We skip this lerp, because it is silly
-        let target_up = direction_control.direction.clone(); // direction_control.up.lerp(direction_control.direction, 0.5);
+        let target_up = direction_control.up.lerp(direction_control.direction, boid_stuff.turn_speed);
         let to_add = Rotation::from_radians(
             target_up
                 .angle_between(
