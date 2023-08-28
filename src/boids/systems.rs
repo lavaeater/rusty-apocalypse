@@ -29,64 +29,66 @@ pub fn spawn_more_boids(
     if boid_settings.time_left < 0.0 {
         let boid_count = boid_count.iter().count();
         info!("Boid Count: {}", boid_count);
-        boid_settings.time_left = boid_settings.cool_down;
-        for n in 0..boid_settings.boids_to_generate {
-            let x = rng.gen_range(-200..200) as f32;
-            let y = rng.gen_range(-100..100) as f32;
+        if boid_count < 2000 {
+            boid_settings.time_left = boid_settings.cool_down;
+            for n in 0..boid_settings.boids_to_generate {
+                let x = rng.gen_range(-200..200) as f32;
+                let y = rng.gen_range(-100..100) as f32;
 
-            // let hunt_and_eat = Steps::build()
-            //     .label("Hunt And Eat")
-            //     // Try to find prey...
-            //     .step(FindPrey {})
-            //     // ...hunting it...
-            //     .step(Hunt {})
-            //     // ...and eating it.
-            //     .step(AttackAndEat { per_second: 10.0 });
-            //
-            // let thinker = Thinker::build()
-            //     .label("Boid Thinker")
-            //     .picker(FirstToScore { threshold: 0.8 })
-            //     // Technically these are supposed to be ActionBuilders and
-            //     // ScorerBuilders, but our Clone impls simplify our code here.
-            //     .when(
-            //         Hungry,
-            //         hunt_and_eat,
-            //     );
+                // let hunt_and_eat = Steps::build()
+                //     .label("Hunt And Eat")
+                //     // Try to find prey...
+                //     .step(FindPrey {})
+                //     // ...hunting it...
+                //     .step(Hunt {})
+                //     // ...and eating it.
+                //     .step(AttackAndEat { per_second: 10.0 });
+                //
+                // let thinker = Thinker::build()
+                //     .label("Boid Thinker")
+                //     .picker(FirstToScore { threshold: 0.8 })
+                //     // Technically these are supposed to be ActionBuilders and
+                //     // ScorerBuilders, but our Clone impls simplify our code here.
+                //     .when(
+                //         Hungry,
+                //         hunt_and_eat,
+                //     );
 
-            commands
-                .spawn((
-                    // thinker,
-                    // Hunger::new(75.0, rng.gen_range(1..100) as f32 / 100.0),
-                    BoidBundle::new(
-                        format!("Boid {}", n),
-                        Vec2::new(x, y),
-                        Vec2::new(rng.gen_range(-1.0..1.0), rng.gen_range(-1.0..1.0)).try_normalize().unwrap_or(Vec2::Y),
-                        5..rng.gen_range(10..=20),
-                        rng.gen_range(1.0..=3.0),
-                        rng.gen_range(15..=75),
-                        BoidStuff {
-                            separation_factor: rng.gen_range(0.25..1.0),
-                            cohesion_factor: rng.gen_range(0.25..1.0),
-                            alignment_factor: rng.gen_range(0.25..1.0),
-                            turn_speed: rng.gen_range(0.01..0.25),
+                commands
+                    .spawn((
+                        // thinker,
+                        // Hunger::new(75.0, rng.gen_range(1..100) as f32 / 100.0),
+                        BoidBundle::new(
+                            format!("Boid {}", n),
+                            Vec2::new(x, y),
+                            Vec2::new(rng.gen_range(-1.0..1.0), rng.gen_range(-1.0..1.0)).try_normalize().unwrap_or(Vec2::Y),
+                            5..rng.gen_range(10..=20),
+                            rng.gen_range(1.0..=3.0),
+                            rng.gen_range(15..=75),
+                            BoidStuff {
+                                separation_factor: rng.gen_range(0.25..1.0),
+                                cohesion_factor: rng.gen_range(0.25..1.0),
+                                alignment_factor: rng.gen_range(0.25..1.0),
+                                turn_speed: rng.gen_range(0.01..0.25),
+                                ..default()
+                            },
+                        ),
+                        SpriteBundle {
+                            transform: Transform::from_xyz(
+                                x,
+                                y,
+                                2.0,
+                            )
+                                .with_scale(Vec3::new(
+                                    METERS_PER_PIXEL,
+                                    METERS_PER_PIXEL,
+                                    1.0,
+                                )),
+                            texture: asset_server.load("sprites/boid.png"),
                             ..default()
                         },
-                    ),
-                    SpriteBundle {
-                        transform: Transform::from_xyz(
-                            x,
-                            y,
-                            2.0,
-                        )
-                            .with_scale(Vec3::new(
-                                METERS_PER_PIXEL,
-                                METERS_PER_PIXEL,
-                                1.0,
-                            )),
-                        texture: asset_server.load("sprites/boid.png"),
-                        ..default()
-                    },
-                ));
+                    ));
+            }
         }
     }
 }
