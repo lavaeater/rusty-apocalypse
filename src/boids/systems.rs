@@ -1,5 +1,5 @@
 use bevy::prelude::{Commands, default, Entity, Query, Res, ResMut, SpriteBundle, Transform, With};
-use bevy_xpbd_2d::components::{Collider, CollisionLayers, Position, RigidBody, Rotation};
+use bevy_xpbd_2d::components::{Position, Rotation};
 use bevy::math::{Vec2, Vec3};
 use bevy::asset::AssetServer;
 use bevy_rand::prelude::GlobalEntropy;
@@ -7,23 +7,95 @@ use rand_chacha::ChaCha8Rng;
 use big_brain::actions::Steps;
 use big_brain::prelude::Thinker;
 use big_brain::pickers::FirstToScore;
-use bevy::core::Name;
 use bevy_xpbd_2d::math::Vector2;
 use rand::Rng;
 use std::ops::AddAssign;
-use crate::components::{Health, QuadCoord, QuadStore};
-use crate::{Layer, METERS_PER_PIXEL};
+use bevy::time::Time;
+use crate::components::{QuadCoord, QuadStore};
+use crate::METERS_PER_PIXEL;
 use crate::boids::ai::{AttackAndEat, FindPrey, Hunger, Hungry, Hunt};
-use crate::boids::components::{Boid, BoidAttack, BoidDirection, BoidStuff};
+use crate::boids::components::{Boid, BoidBundle, BoidDirection, BoidStuff};
+use crate::boids::resources::BoidGenerationSettings;
+
+pub fn spawn_more_boids(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut rng: ResMut<GlobalEntropy<ChaCha8Rng>>,
+    time: Res<Time>,
+    mut boid_settings: ResMut<BoidGenerationSettings>,
+) {
+    boid_settings.time_left -= time.delta_seconds();
+    if (boid_settings.time_left < 0.0) {
+        boid_settings.time_left = boid_settings.cool_down;
+        for n in 0..boid_settings.boids_to_generate {
+            let x = rng.gen_range(-1000..1000) as f32;
+            let y = rng.gen_range(-1000..1000) as f32;
+
+            let hunt_and_eat = Steps::build()
+                .label("Hunt And Eat")
+                // Try to find prey...
+                .step(FindPrey {})
+                // ...hunting it...
+                .step(Hunt {})
+                // ...and eating it.
+                .step(AttackAndEat { per_second: 10.0 });
+
+            let thinker = Thinker::build()
+                .label("Boid Thinker")
+                .picker(FirstToScore { threshold: 0.8 })
+                // Technically these are supposed to be ActionBuilders and
+                // ScorerBuilders, but our Clone impls simplify our code here.
+                .when(
+                    Hungry,
+                    hunt_and_eat,
+                );
+
+            commands
+                .spawn((
+                    thinker,
+                    Hunger::new(75.0, 2.0),
+                    BoidBundle::new(
+                        format!("Boid {}", n),
+                        Vec2::new(x, y),
+                        Vec2::new(rng.gen_range(-1.0..1.0), rng.gen_range(-1.0..1.0)).try_normalize().unwrap_or(Vec2::Y),
+                        5..rng.gen_range(10..=20),
+                        rng.gen_range(1.0..=3.0),
+                        rng.gen_range(15..=75),
+                        BoidStuff {
+                            separation_factor: rng.gen_range(0.25..1.0),
+                            cohesion_factor: rng.gen_range(0.25..1.0),
+                            alignment_factor: rng.gen_range(0.25..1.0),
+                            turn_speed: rng.gen_range(0.01..0.25),
+                            ..default()
+                        },
+                    ),
+                    SpriteBundle {
+                        transform: Transform::from_xyz(
+                            x,
+                            y,
+                            2.0,
+                        )
+                            .with_scale(Vec3::new(
+                                METERS_PER_PIXEL,
+                                METERS_PER_PIXEL,
+                                1.0,
+                            )),
+                        texture: asset_server.load("sprites/boid.png"),
+                        ..default()
+                    },
+                ));
+        }
+    }
+}
 
 pub fn spawn_boids(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut rng: ResMut<GlobalEntropy<ChaCha8Rng>>
+    mut rng: ResMut<GlobalEntropy<ChaCha8Rng>>,
 ) {
-    for n in 0..1000 {
-        let x = rng.gen_range(-500..500) as f32;
-        let y = rng.gen_range(-500..500) as f32;
+    for n in 0..500 {
+        let x = rng.gen_range(-1000..1000) as f32;
+        let y = rng.gen_range(-1000..1000) as f32;
         let hunt_and_eat = Steps::build()
             .label("Hunt And Eat")
             // Try to find prey...
@@ -45,30 +117,23 @@ pub fn spawn_boids(
 
         commands
             .spawn((
-                Name::from("Boid ".to_string() + &n.to_string()),
-                Hunger::new(75.0, 2.0),
-                BoidDirection {
-                    force_scale: 5.0,
-                    direction: Vec2::new(rng.gen_range(-1.0..1.0), rng.gen_range(-1.0..1.0)).try_normalize().unwrap_or(Vec2::Y),
-                    ..default()
-                },
                 thinker,
-                Boid {},
-                Health::default(),
-                BoidAttack {
-                    max_damage: (5..rng.gen_range(10..=20)),
-                    cool_down: 0.0,
-                    cool_down_default: rng.gen_range(1.0..=3.0),
-                    skill_level: rng.gen_range(15..=75),
-                },
-                QuadCoord::default(),
-                BoidStuff {
-                    separation_factor: rng.gen_range(0.25..1.0),
-                    cohesion_factor: rng.gen_range(0.25..1.0),
-                    alignment_factor: rng.gen_range(0.25..1.0),
-                    turn_speed: rng.gen_range(0.01..0.25),
-                    ..default()
-                },
+                Hunger::new(75.0, 2.0),
+                BoidBundle::new(
+                    format!("Boid {}", n),
+                    Vec2::new(x, y),
+                    Vec2::new(rng.gen_range(-1.0..1.0), rng.gen_range(-1.0..1.0)).try_normalize().unwrap_or(Vec2::Y),
+                    5..rng.gen_range(10..=20),
+                    rng.gen_range(1.0..=3.0),
+                    rng.gen_range(15..=75),
+                    BoidStuff {
+                        separation_factor: rng.gen_range(0.25..1.0),
+                        cohesion_factor: rng.gen_range(0.25..1.0),
+                        alignment_factor: rng.gen_range(0.25..1.0),
+                        turn_speed: rng.gen_range(0.01..0.25),
+                        ..default()
+                    },
+                ),
                 SpriteBundle {
                     transform: Transform::from_xyz(
                         x,
@@ -83,16 +148,6 @@ pub fn spawn_boids(
                     texture: asset_server.load("sprites/boid.png"),
                     ..default()
                 },
-                RigidBody::Kinematic,
-                Position::from(Vec2 {
-                    x,
-                    y,
-                }),
-                Collider::triangle(
-                    Vec2::new(0.0, 8.0 * METERS_PER_PIXEL),
-                    Vec2::new(8.0 * METERS_PER_PIXEL, -8.0 * METERS_PER_PIXEL),
-                    Vec2::new(-8.0 * METERS_PER_PIXEL, -8.0 * METERS_PER_PIXEL)),
-                CollisionLayers::new([Layer::Boid], [Layer::Player, Layer::Bullet]),
             ));
     }
 }
@@ -151,7 +206,7 @@ pub fn quad_boid_flocking(
         let others = quad_coords
             .iter()
             .filter_map(|coord|
-                quad_store.0.get(coord)
+                quad_store.entities.get(coord)
             ).flatten().collect::<Vec<_>>();
 
         for other in others {

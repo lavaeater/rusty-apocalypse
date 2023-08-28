@@ -1,6 +1,11 @@
-use bevy::prelude::{Component, Reflect};
+use bevy::prelude::{Bundle, Component, default, Reflect};
 use bevy_xpbd_2d::math::Vector2;
 use std::ops::Range;
+use bevy::core::Name;
+use bevy::math::{Vec2};
+use bevy_xpbd_2d::components::{Collider, CollisionLayers, Position, RigidBody};
+use crate::components::{Health, QuadCoord};
+use crate::{Layer, METERS_PER_PIXEL};
 
 #[derive(Component, Clone)]
 pub struct Boid {}
@@ -71,6 +76,55 @@ impl Default for BoidDirection {
             direction: Vector2::ZERO,
             up: Vector2::Y,
             force_scale: 10.0,
+        }
+    }
+}
+
+#[derive(Bundle)]
+pub struct BoidBundle {
+    pub name: Name,
+    pub direction_control: BoidDirection,
+    pub boid: Boid,
+    pub health: Health,
+    pub rigid_body: RigidBody,
+    pub quad_coord: QuadCoord,
+    pub position: Position,
+    pub collider: Collider,
+    pub collision_layers: CollisionLayers,
+    pub boid_attack: BoidAttack,
+    pub boid_stuff: BoidStuff
+}
+impl BoidBundle {
+    pub fn new(
+        name: String,
+        position: Vec2,
+        direction: Vec2,
+        max_damage: Range<i32>,
+        cool_down_default: f32,
+        skill_level: i32,
+        boid_stuff: BoidStuff,
+    ) -> Self {
+        Self {
+            name: Name::from(name),
+            direction_control: BoidDirection {
+                force_scale: 5.0,
+                direction: direction.clone(),
+                ..default()
+            },
+            boid: Boid {},
+            boid_stuff,
+            health: Health::default(),
+             boid_attack: BoidAttack {
+                 max_damage,
+                 cool_down: 0.0,
+                 cool_down_default,
+                 skill_level,
+             },
+             rigid_body: RigidBody::Kinematic,
+            quad_coord: QuadCoord::default(),
+            position: Position::from(position),
+            collider: Collider::cuboid(16.0 * METERS_PER_PIXEL, 8.0 * METERS_PER_PIXEL),
+            collision_layers: CollisionLayers::new([Layer::Boid], [Layer::Player, Layer::Bullet]),
         }
     }
 }

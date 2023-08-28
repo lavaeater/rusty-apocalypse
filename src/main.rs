@@ -6,7 +6,7 @@ use bevy_rand::plugin::EntropyPlugin;
 use bevy_xpbd_2d::prelude::*;
 use big_brain::{BigBrainPlugin, BigBrainSet};
 use systems::*;
-use crate::components::{Health, QuadCoord, QuadStore};
+use crate::components::{Health, QuadCoord, QuadStore, Rebuild};
 use rand_chacha::ChaCha8Rng;
 use boids::ai::{attack_and_eat_action_system, find_prey_action_system, Hunger, hunger_scorer_system, hunger_system, hunt_prey_action_system, HuntTarget};
 use boids::components::{BoidDirection, BoidStuff};
@@ -17,6 +17,8 @@ use systems::input::{add_mouse_aim_line, draw_mouse_aim, keyboard_input, mouse_l
 use systems::movement::{linear_velocity_control_boid, linear_velocity_control_player};
 use systems::player::spawn_player;
 use systems::startup::{load_background, spawn_camera};
+use crate::boids::resources::BoidGenerationSettings;
+use crate::boids::systems::spawn_more_boids;
 use crate::components::player::WeaponInventory;
 use crate::components::weapon::{CurrentWeapon, WeaponDefs};
 use crate::events::collisions::{BoidHitPlayerEvent, BulletHitBoidEvent, BulletHitPlayerEvent, BulletHitWallEvent};
@@ -42,10 +44,18 @@ fn main() {
         .add_plugins(PhysicsPlugins::default())
         .add_plugins(ShapePlugin)
         .add_plugins(EntropyPlugin::<ChaCha8Rng>::default())
-        .insert_resource(QuadStore(HashMap::new()))
+        .insert_resource(QuadStore {
+            entities: HashMap::new(),
+            quad_size: 100.0,
+            max_entities: 100,
+            largest_count: 0,
+            min_entities: 50,
+            rebuild_store: Rebuild::Keep
+        })
         .insert_resource(Gravity(Vec2::ZERO))
         .insert_resource(FixedTime::new_from_secs(FIXED_TIME_STEP))
         .insert_resource(WeaponDefs::default())
+        .insert_resource(BoidGenerationSettings::new( 1.0,  10 ))
         .insert_resource(GizmoConfig {
             depth_bias: -1.0,
             ..default()
@@ -86,6 +96,7 @@ fn main() {
         .add_systems(Update, hunger_system)
         .add_systems(FixedUpdate, quad_boid_flocking)
         .add_systems(FixedUpdate, naive_quad_system)
+        .add_systems(FixedUpdate, spawn_more_boids)
         .add_systems(
             PreUpdate,
             (
