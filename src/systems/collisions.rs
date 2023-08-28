@@ -1,37 +1,13 @@
-use std::os::unix::raw::mode_t;
 use bevy::prelude::*;
 use bevy_xpbd_2d::collision::Collision;
-use bevy_xpbd_2d::prelude::{Contact, LinearVelocity};
 use crate::boids::components::Boid;
-use crate::components::{Health, Wall};
+use crate::components::Wall;
 use crate::components::player::Player;
 use crate::components::weapon::Projectile;
+use crate::events::collisions::{BoidHitPlayerEvent, BulletHitBoidEvent, BulletHitPlayerEvent, BulletHitWallEvent};
 
-#[derive(Event)]
-struct BulletHitBoidEvent {
-    bullet: Entity,
-    boid: Entity,
-}
 
-#[derive(Event)]
-struct BulletHitWallEvent {
-    bullet: Entity,
-    wall: Entity,
-}
-
-#[derive(Event)]
-struct BulletHitPlayerEvent {
-    bullet: Entity,
-    player: Entity,
-}
-
-#[derive(Event)]
-struct BoidHitPlayerEvent {
-    boid: Entity,
-    player: Entity,
-}
-
-fn my_system(
+pub fn collision_event_listener(
     mut collision_event_reader: EventReader<Collision>,
     player_query: Query<&Player>,
     boid_query: Query<&Boid>,
@@ -82,6 +58,5 @@ fn my_system(
                 player: *player_entity,
             })
         }
-
     }
 }

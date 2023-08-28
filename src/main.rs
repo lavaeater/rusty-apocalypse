@@ -19,12 +19,14 @@ use systems::player::spawn_player;
 use systems::startup::{load_background, spawn_camera};
 use crate::components::player::WeaponInventory;
 use crate::components::weapon::{CurrentWeapon, WeaponDefs};
+use crate::systems::collisions::collision_event_listener;
 use crate::systems::player::cycle_weapon_system;
 use crate::systems::shooting::shooting_system;
 
 mod components;
 mod systems;
 mod boids;
+mod events;
 
 const PIXELS_PER_METER: f32 = 16.0;
 const METERS_PER_PIXEL: f32 = 1.0 / PIXELS_PER_METER;
@@ -71,6 +73,7 @@ fn main() {
         .add_systems(Update, keyboard_input)
         .add_systems(Update, cycle_weapon_system)
         .add_systems(Update, shooting_system)
+        .add_systems(Update, collision_event_listener)
         .add_systems(Update, mouse_position)
         .add_systems(Update, draw_mouse_aim)
         .add_systems(Update, mouse_look)
