@@ -1,4 +1,4 @@
-use bevy::prelude::{Camera, Color, Commands, default, Entity, EventReader, GlobalTransform, Query, Transform, Window, With};
+use bevy::prelude::{Camera, Color, Commands, default, Entity, EventReader, GlobalTransform, MouseButton, Query, Transform, Window, With};
 use bevy::window::PrimaryWindow;
 use bevy_prototype_lyon::shapes;
 use bevy::math::Vec2;
@@ -9,6 +9,8 @@ use bevy_xpbd_2d::components::Rotation;
 use bevy_prototype_lyon::path::ShapePath;
 use bevy::input::keyboard::KeyboardInput;
 use std::ops::AddAssign;
+use bevy::input::ButtonState;
+use bevy::input::mouse::MouseButtonInput;
 use crate::components::{AimLine, GameCam};
 use crate::components::control::{CycleDirection, CycleWeapon, PlayerControl, TriggerPulled};
 use crate::components::player::Player;
@@ -16,7 +18,7 @@ use crate::components::player::Player;
 pub fn keyboard_input(
     mut key_evr: EventReader<KeyboardInput>,
     mut query: Query<(Entity, &mut PlayerControl), With<Player>>,
-    mut commands: Commands
+    mut commands: Commands,
 ) {
     use bevy::input::ButtonState;
     use bevy::prelude::KeyCode;
@@ -72,6 +74,35 @@ pub fn keyboard_input(
             }
         }
         player_control.direction = player_control.direction.normalize_or_zero();
+    }
+}
+
+pub fn mouse_key_input(
+    mut mouse_ev_reader: EventReader<MouseButtonInput>,
+    mut query: Query<Entity, With<Player>>,
+    mut commands: Commands) {
+    if let Ok((entity)) = query.get_single_mut() {
+        for ev in mouse_ev_reader.iter() {
+            match ev.state {
+                ButtonState::Pressed => {
+                    match ev.button {
+                        MouseButton::Left => {
+                            commands.entity(entity).insert(TriggerPulled {});
+                        }
+                        _ => {}
+                    }
+                }
+
+                ButtonState::Released => {
+                    match ev.button {
+                        MouseButton::Left => {
+                            commands.entity(entity).remove::<TriggerPulled>();
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
     }
 }
 

@@ -26,6 +26,7 @@ pub enum AmmoType {
 pub struct WeaponDef {
     pub name: String,
     pub damage: Range<i32>,
+    pub bullet_speed: f32,
     pub ammo: i32,
     pub rof: f32,
     pub ammo_type: AmmoType,
@@ -51,6 +52,7 @@ pub struct Weapon {
     pub ammo_left: i32,
     pub name: String,
     pub damage: Range<i32>,
+    pub bullet_speed: f32,
     pub current_ammo: i32,
     pub max_ammo: i32,
     pub rof: f32,
@@ -70,21 +72,24 @@ impl Default for WeaponDefs {
                 WeaponDef {
                     name: "Pistol".to_string(),
                     damage: 1..2,
-                    ammo: 10,
+                    ammo: 1000,
+                    bullet_speed: 100.0,
                     rof: 2.0,
                     ammo_type: AmmoType::Bullet("Bullet".to_string()),
                 },
                 WeaponDef {
                     name: "Rocket Launcher".to_string(),
                     damage: 10..20,
-                    ammo: 3,
+                    ammo: 3000,
+                    bullet_speed: 25.0,
                     rof: 1.0,
                     ammo_type: AmmoType::Rocket("Rocket".to_string()),
                 },
                 WeaponDef {
                     name: "Grenade Launcher".to_string(),
                     damage: 10..20,
-                    ammo: 3,
+                    ammo: 3000,
+                    bullet_speed: 12.0,
                     rof: 1.0,
                     ammo_type: AmmoType::Grenade("Grenade".to_string()),
                 },
@@ -99,6 +104,7 @@ impl Weapon {
             ammo_left: weapon_def.ammo.clone(),
             name: weapon_def.name.clone(),
             damage: weapon_def.damage.clone(),
+            bullet_speed: weapon_def.bullet_speed.clone(),
             current_ammo: weapon_def.ammo.clone(),
             rof: weapon_def.rof.clone(),
             ammo_type: weapon_def.ammo_type.clone(),
@@ -139,6 +145,10 @@ impl CurrentWeapon {
             true
         }
     }
+
+    pub fn bullet_speed_or_zero(&self) -> f32 {
+        self.weapon.as_ref().map(|w| w.bullet_speed).unwrap_or(0.0)
+    }
 }
 
 impl Default for CurrentWeapon {
@@ -156,6 +166,7 @@ pub struct Shooter(Entity);
 #[derive(Bundle)]
 pub struct ProjectileBundle {
     name: Name,
+    projectile: Projectile,
     position: Position,
     rigid_body: RigidBody,
     collider: Collider,
@@ -174,6 +185,7 @@ impl ProjectileBundle {
         shooter: Entity) -> Self {
         Self {
             name: Name::from(name),
+            projectile: Projectile {},
             position: from.clone(),
             rigid_body: RigidBody::Kinematic,
             collider,

@@ -19,7 +19,9 @@ use systems::player::spawn_player;
 use systems::startup::{load_background, spawn_camera};
 use crate::components::player::WeaponInventory;
 use crate::components::weapon::{CurrentWeapon, WeaponDefs};
-use crate::systems::collisions::collision_event_listener;
+use crate::events::collisions::{BoidHitPlayerEvent, BulletHitBoidEvent, BulletHitPlayerEvent, BulletHitWallEvent};
+use crate::systems::collisions::{bullet_hit_boid_listener, collision_event_listener};
+use crate::systems::input::mouse_key_input;
 use crate::systems::player::cycle_weapon_system;
 use crate::systems::shooting::shooting_system;
 
@@ -30,7 +32,7 @@ mod events;
 
 const PIXELS_PER_METER: f32 = 16.0;
 const METERS_PER_PIXEL: f32 = 1.0 / PIXELS_PER_METER;
-const CAMERA_SCALE: f32 = 1.0;
+const CAMERA_SCALE: f32 = 0.75;
 const FIXED_TIME_STEP: f32 = 1.0 / 10.0;
 
 fn main() {
@@ -44,6 +46,10 @@ fn main() {
         .insert_resource(Gravity(Vec2::ZERO))
         .insert_resource(FixedTime::new_from_secs(FIXED_TIME_STEP))
         .insert_resource(WeaponDefs::default())
+        .insert_resource(GizmoConfig {
+            depth_bias: -1.0,
+            ..default()
+        })
         .register_type::<PlayerControl>()
         .register_type::<BoidDirection>()
         .register_type::<BoidStuff>()
@@ -53,27 +59,24 @@ fn main() {
         .register_type::<Health>()
         .register_type::<CurrentWeapon>()
         .register_type::<WeaponInventory>()
+        .add_event::<BoidHitPlayerEvent>()
+        .add_event::<BulletHitBoidEvent>()
+        .add_event::<BulletHitPlayerEvent>()
+        .add_event::<BulletHitWallEvent>()
         .add_plugins(WorldInspectorPlugin::new())
         .add_plugins(BigBrainPlugin::new(PreUpdate))
-        .add_systems(Startup,
-                     load_background)
-        .add_systems(Startup,
-                     spawn_camera)
-        .add_systems(Startup,
-                     spawn_player)
-        // .add_systems(Startup,
-        //              spawn_boids)
-        .add_systems(Startup,
-                     add_mouse_aim_line)
-        .insert_resource(GizmoConfig {
-            depth_bias: -1.0,
-            ..default()
-        })
+        .add_systems(Startup, load_background)
+        .add_systems(Startup,spawn_camera)
+        .add_systems(Startup,spawn_player)
+        .add_systems(Startup,spawn_boids)
+        .add_systems(Startup, add_mouse_aim_line)
         .add_systems(Update, camera_follow)
         .add_systems(Update, keyboard_input)
+        .add_systems(Update, mouse_key_input)
         .add_systems(Update, cycle_weapon_system)
         .add_systems(Update, shooting_system)
         .add_systems(Update, collision_event_listener)
+        .add_systems(Update, bullet_hit_boid_listener)
         .add_systems(Update, mouse_position)
         .add_systems(Update, draw_mouse_aim)
         .add_systems(Update, mouse_look)

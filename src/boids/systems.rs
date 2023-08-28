@@ -92,7 +92,7 @@ pub fn spawn_boids(
                     Vec2::new(0.0, 8.0 * METERS_PER_PIXEL),
                     Vec2::new(8.0 * METERS_PER_PIXEL, -8.0 * METERS_PER_PIXEL),
                     Vec2::new(-8.0 * METERS_PER_PIXEL, -8.0 * METERS_PER_PIXEL)),
-                CollisionLayers::new([Layer::Boid], [Layer::Player]),
+                CollisionLayers::new([Layer::Boid], [Layer::Player, Layer::Bullet]),
             ));
     }
 }
