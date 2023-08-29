@@ -1,4 +1,4 @@
-use bevy::prelude::{Camera, Color, Commands, default, Entity, EventReader, GlobalTransform, MouseButton, Query, Transform, Window, With};
+use bevy::prelude::{Camera, Color, Commands, default, Entity, EventReader, GlobalTransform, KeyCode, MouseButton, Query, Transform, Window, With};
 use bevy::window::PrimaryWindow;
 use bevy_prototype_lyon::shapes;
 use bevy::math::Vec2;
@@ -11,7 +11,7 @@ use bevy::input::keyboard::KeyboardInput;
 use std::ops::AddAssign;
 use bevy::input::ButtonState;
 use bevy::input::mouse::MouseButtonInput;
-use crate::components::{AimLine, GameCam};
+use crate::components::general::{AimLine, GameCam};
 use crate::components::control::{CycleDirection, CycleWeapon, PlayerControl, TriggerPulled};
 use crate::components::player::Player;
 
@@ -20,8 +20,6 @@ pub fn keyboard_input(
     mut query: Query<(Entity, &mut PlayerControl), With<Player>>,
     mut commands: Commands,
 ) {
-    use bevy::input::ButtonState;
-    use bevy::prelude::KeyCode;
     if let Ok((entity, mut player_control)) = query.get_single_mut() {
         for ev in key_evr.iter() {
             match ev.state {
@@ -81,7 +79,7 @@ pub fn mouse_key_input(
     mut mouse_ev_reader: EventReader<MouseButtonInput>,
     mut query: Query<Entity, With<Player>>,
     mut commands: Commands) {
-    if let Ok((entity)) = query.get_single_mut() {
+    if let Ok(entity) = query.get_single_mut() {
         for ev in mouse_ev_reader.iter() {
             match ev.state {
                 ButtonState::Pressed => {

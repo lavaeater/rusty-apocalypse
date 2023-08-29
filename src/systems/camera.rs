@@ -1,6 +1,6 @@
 use bevy::prelude::{Query, Transform, With, Without};
 use bevy::math::Vec3;
-use crate::components::{CameraFollow, GameCam};
+use crate::components::general::{CameraFollow, GameCam};
 
 pub fn camera_follow(
     to_follow: Query<&Transform, (With<CameraFollow>, Without<GameCam>)>,

@@ -3,7 +3,7 @@ use bevy::asset::AssetServer;
 use bevy::math::{Rect, Vec2, Vec3};
 use bevy::core::Name;
 use bevy::render::camera::ScalingMode;
-use crate::components::GameCam;
+use crate::components::general::GameCam;
 use crate::{CAMERA_SCALE, METERS_PER_PIXEL, PIXELS_PER_METER};
 
 pub fn load_background(

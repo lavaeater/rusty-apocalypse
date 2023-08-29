@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_xpbd_2d::components::LinearVelocity;
 use bevy_xpbd_2d::prelude::{CollisionStarted, ExternalForce};
 use crate::boids::components::Boid;
-use crate::components::{Health, Wall};
+use crate::components::general::{Health, Wall};
 use crate::components::player::Player;
 use crate::components::weapon::Projectile;
 use crate::events::collisions::{BoidHitPlayerEvent, BulletHitBoidEvent, BulletHitPlayerEvent, BulletHitWallEvent};

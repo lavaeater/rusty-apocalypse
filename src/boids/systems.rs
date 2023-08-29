@@ -11,7 +11,7 @@ use bevy::core::Name;
 use bevy_xpbd_2d::math::Vector2;
 use rand::Rng;
 use std::ops::AddAssign;
-use crate::components::Health;
+use crate::components::general::Health;
 use crate::{Layer, METERS_PER_PIXEL};
 use crate::boids::ai::{AttackAndEat, FindPrey, Hunger, Hungry, Hunt};
 use crate::boids::components::{Boid, BoidAttack, BoidDirection, BoidStuff};

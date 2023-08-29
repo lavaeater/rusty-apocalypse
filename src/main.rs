@@ -6,7 +6,6 @@ use bevy_rand::plugin::EntropyPlugin;
 use bevy_xpbd_2d::prelude::*;
 use big_brain::{BigBrainPlugin, BigBrainSet};
 use systems::*;
-use crate::components::Health;
 use rand_chacha::ChaCha8Rng;
 use boids::ai::{attack_and_eat_action_system, find_prey_action_system, Hunger, hunger_scorer_system, hunger_system, hunt_prey_action_system, HuntTarget};
 use boids::components::{BoidDirection, BoidStuff};
@@ -19,6 +18,7 @@ use systems::input::{add_mouse_aim_line, draw_mouse_aim, keyboard_input, mouse_l
 use systems::movement::{linear_velocity_control_boid, linear_velocity_control_player};
 use systems::player::spawn_player;
 use systems::startup::{load_background, spawn_camera};
+use crate::components::general::Health;
 use crate::components::player::WeaponInventory;
 use crate::components::weapon::{CurrentWeapon, WeaponDefs};
 use crate::events::collisions::{BoidHitPlayerEvent, BulletHitBoidEvent, BulletHitPlayerEvent, BulletHitWallEvent};

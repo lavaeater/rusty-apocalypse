@@ -1,4 +1,4 @@
-use bevy::prelude::{Event, Resource};
+use bevy::prelude::{Resource};
 use bevy::utils::HashMap;
 
 #[derive(Debug, PartialEq)]
@@ -25,7 +25,7 @@ impl FactsOfTheWorld {
         let base_facts: HashMap<String, Fact> = HashMap::new();
 
         FactsOfTheWorld {
-            facts: HashMap::new(),
+            facts: base_facts
         }
     }
 
