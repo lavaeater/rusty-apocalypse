@@ -29,6 +29,7 @@ mod components;
 mod systems;
 mod boids;
 mod events;
+mod resources;
 
 const PIXELS_PER_METER: f32 = 16.0;
 const METERS_PER_PIXEL: f32 = 1.0 / PIXELS_PER_METER;
