@@ -1,4 +1,4 @@
-use bevy::prelude::{Resource};
+use bevy::prelude::{Event, Resource};
 use bevy::utils::HashMap;
 
 #[derive(Debug, PartialEq)]
@@ -10,14 +10,8 @@ pub enum Fact {
     ListFact(Vec<Fact>),
 }
 
-trait FactTrait {
-    fn value<T>(&self) -> Option<T>;
-}
-
-impl FactTrait for String {
-    fn value<String>(&self) -> Option<&str> {
-        Some(self.clone())
-    }
+pub trait Condition {
+    fn is_true(&self, facts: &FactsOfTheWorld) -> bool;
 }
 
 #[derive(Debug, Resource)]
@@ -26,6 +20,16 @@ pub struct FactsOfTheWorld {
 }
 
 impl FactsOfTheWorld {
+
+    pub fn default() -> Self {
+        let base_facts: HashMap<String, Fact> = HashMap::new();
+
+        FactsOfTheWorld {
+            facts: HashMap::new(),
+        }
+    }
+
+
     pub fn is_true(&self, key: &str) -> bool {
         match self.facts.get(key) {
             Some(fact) => {

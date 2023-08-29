@@ -5,11 +5,13 @@ pub(crate) mod movement;
 pub(crate) mod shooting;
 pub(crate) mod player;
 pub(crate) mod collisions;
+pub(crate) mod things_happening;
 
-use crate::components::{QuadCoord, QuadStore};
+use crate::components::quads::QuadCoord;
 use bevy::prelude::{Entity, Query, ResMut};
 use bevy::utils::HashSet;
 use bevy_xpbd_2d::components::Position;
+use crate::resources::quad_store::QuadStore;
 
 pub fn naive_quad_system(
     mut query: Query<(Entity, &Position, &mut QuadCoord)>,

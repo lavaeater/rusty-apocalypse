@@ -7,7 +7,8 @@ use bevy_rand::prelude::GlobalEntropy;
 use rand_chacha::ChaCha8Rng;
 use rand::Rng;
 use crate::boids::components::{BoidAttack, BoidStuff};
-use crate::components::{Health, Prey, QuadCoord};
+use crate::components::{Health, Prey};
+use crate::components::quads::QuadCoord;
 
 pub fn hunger_system(time: Res<Time>, mut hungers: Query<&mut Hunger>) {
     for mut hungry in &mut hungers {
