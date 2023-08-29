@@ -26,6 +26,7 @@ use crate::systems::collisions::{bullet_hit_boid_listener, collision_event_liste
 use crate::systems::input::mouse_key_input;
 use crate::systems::player::cycle_weapon_system;
 use crate::systems::shooting::shooting_system;
+use crate::systems::things_happening::spawn_places;
 
 mod components;
 mod systems;
@@ -72,6 +73,7 @@ fn main() {
         .add_systems(Startup,spawn_camera)
         .add_systems(Startup,spawn_player)
         .add_systems(Startup,spawn_boids)
+        .add_systems(Startup,spawn_places)
         .add_systems(Startup, add_mouse_aim_line)
         .add_systems(Update, camera_follow)
         .add_systems(Update, keyboard_input)
