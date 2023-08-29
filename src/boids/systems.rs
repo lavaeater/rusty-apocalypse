@@ -25,11 +25,17 @@ pub fn spawn_more_boids(
     mut boid_settings: ResMut<BoidGenerationSettings>,
     boid_count: Query<&Boid>,
 ) {
-    boid_settings.time_left -= time.delta_seconds();
-    if boid_settings.time_left < 0.0 {
+    boid_settings.counting_time_left -= time.delta_seconds();
+    if boid_settings.counting_time_left < 0.0 {
+        boid_settings.counting_time_left = boid_settings.cool_down * 10.0;
         let boid_count = boid_count.iter().count();
         info!("Boid Count: {}", boid_count);
-        if boid_count < 2000 {
+        boid_settings.generate_boids = boid_count < boid_settings.max_boids;
+    }
+
+    if boid_settings.generate_boids {
+        boid_settings.time_left -= time.delta_seconds();
+        if boid_settings.time_left < 0.0 {
             boid_settings.time_left = boid_settings.cool_down;
             for n in 0..boid_settings.boids_to_generate {
                 let x = rng.gen_range(-200..200) as f32;
@@ -93,12 +99,13 @@ pub fn spawn_more_boids(
     }
 }
 
+
 pub fn spawn_boids(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut rng: ResMut<GlobalEntropy<ChaCha8Rng>>,
 ) {
-    for n in 0..500 {
+    for n in 0..100 {
         let x = rng.gen_range(-200..200) as f32;
         let y = rng.gen_range(-100..100) as f32;
         // let hunt_and_eat = Steps::build()

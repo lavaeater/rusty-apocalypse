@@ -48,17 +48,17 @@ fn main() {
         .insert_resource(QuadStore {
             entities: HashMap::new(),
             quad_size: 128.0,
-            min_quad_size: 4.0,
-            max_quad_size: 512.0,
-            max_entities: 100,
+            min_quad_size: 16.0,
+            max_quad_size: 1024.0,
+            max_entities: 200,
             largest_count: 0,
-            min_entities: 10,
+            min_entities: 50,
             rebuild_store: Rebuild::KeepQuadSize
         })
         .insert_resource(Gravity(Vec2::ZERO))
         .insert_resource(FixedTime::new_from_secs(FIXED_TIME_STEP))
         .insert_resource(WeaponDefs::default())
-        .insert_resource(BoidGenerationSettings::new( 1.0,  100 ))
+        .insert_resource(BoidGenerationSettings::new( 1.0,  10, 500, 500))
         .insert_resource(GizmoConfig {
             depth_bias: -1.0,
             ..default()
