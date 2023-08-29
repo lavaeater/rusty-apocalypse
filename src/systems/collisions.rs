@@ -1,11 +1,15 @@
 use bevy::prelude::*;
+use bevy_xpbd_2d::collision::Collision;
 use bevy_xpbd_2d::components::LinearVelocity;
 use bevy_xpbd_2d::prelude::{CollisionStarted, ExternalForce};
 use crate::boids::components::Boid;
 use crate::components::general::{Health, Wall};
 use crate::components::player::Player;
+use crate::components::things_happening::{Lore, Place};
 use crate::components::weapon::Projectile;
-use crate::events::collisions::{BoidHitPlayerEvent, BulletHitBoidEvent, BulletHitPlayerEvent, BulletHitWallEvent};
+use crate::events::collisions::{BoidHitPlayerEvent, BulletHitBoidEvent, BulletHitPlayerEvent, BulletHitSomethingEvent};
+use crate::events::facts::FactOccuredEvent;
+use crate::resources::facts_of_the_world::Fact::BoolFact;
 
 pub fn bullet_hit_boid_listener(
     mut bullet_hit_boid_event_reader: EventReader<BulletHitBoidEvent>,
@@ -28,16 +32,27 @@ pub fn bullet_hit_boid_listener(
     }
 }
 
-pub fn collision_event_listener(
+pub fn bullet_hit_something_listener(
+    mut bullet_hit_something_ev_reader: EventReader<BulletHitSomethingEvent>,
+    mut commands: Commands,
+) {
+    for BulletHitSomethingEvent { bullet, something: _something } in bullet_hit_something_ev_reader.iter() {
+        commands.entity(*bullet).despawn();
+    }
+}
+
+pub fn collision_started_event_listener(
     mut collision_event_reader: EventReader<CollisionStarted>,
     player_query: Query<&Player>,
     boid_query: Query<&Boid>,
     bullet_query: Query<&Projectile>,
     wall_query: Query<&Wall>,
+    place_query: Query<&Place, Option<&Lore>>,
     mut ev_bullet_boid: EventWriter<BulletHitBoidEvent>,
-    mut ev_bullet_wall: EventWriter<BulletHitWallEvent>,
+    mut ev_bullet_wall: EventWriter<BulletHitSomethingEvent>,
     mut ev_bullet_player: EventWriter<BulletHitPlayerEvent>,
-    mut ev_boid_player: EventWriter<BoidHitPlayerEvent>
+    mut ev_boid_player: EventWriter<BoidHitPlayerEvent>,
+    mut ev_fact_occured: EventWriter<FactOccuredEvent>,
 ) {
     for CollisionStarted(entity1, entity2) in collision_event_reader.iter() {
         /*
@@ -60,24 +75,33 @@ pub fn collision_event_listener(
                     bullet: *bullet_entity,
                     player: *other_entity,
                 })
-            } else if wall_query.contains(*other_entity) {
-                ev_bullet_wall.send(BulletHitWallEvent {
+            } else if wall_query.contains(*other_entity) || place_query.contains(*other_entity) {
+                ev_bullet_wall.send(BulletHitSomethingEvent {
                     bullet: *bullet_entity,
-                    wall: *other_entity,
+                    something: *other_entity,
                 })
             }
-        } else if (player_query.contains(*entity1) || player_query.contains(*entity2)) &&
-            (boid_query.contains(*entity1) || boid_query.contains(*entity2)) {
-            /* This is boid on player hit */
-            let (boid_entity, player_entity) = if boid_query.contains(*entity1) {
+        } else if player_query.contains(*entity1) || player_query.contains(*entity2) {
+            let (player_entity, other_entity) = if player_query.contains(*entity1) {
                 (&*entity1, &*entity2)
             } else {
                 (&*entity2, &*entity1)
             };
-            ev_boid_player.send(BoidHitPlayerEvent {
-                boid: *boid_entity,
-                player: *player_entity,
-            })
+
+            if boid_query.contains(*other_entity) {
+                /* This is boid on player hit */
+                ev_boid_player.send(BoidHitPlayerEvent {
+                    boid: *other_entity,
+                    player: *player_entity,
+                })
+            } else if let Ok(place) = place_query.get(*other_entity) {
+                ev_fact_occured.send(FactOccuredEvent {
+                    key: format!("PlaceVisited.{}", place.id),
+                    fact: BoolFact(true),
+                    fact_entity: Some(*other_entity),
+                    acting_entity: Some(*player_entity),
+                })
+            }
         }
     }
 }

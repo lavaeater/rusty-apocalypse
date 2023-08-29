@@ -7,9 +7,9 @@ pub struct BulletHitBoidEvent {
 }
 
 #[derive(Event)]
-pub struct BulletHitWallEvent {
+pub struct BulletHitSomethingEvent {
     pub bullet: Entity,
-    pub wall: Entity,
+    pub something: Entity,
 }
 
 #[derive(Event)]

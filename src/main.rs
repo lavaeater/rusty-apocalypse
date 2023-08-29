@@ -21,8 +21,8 @@ use systems::startup::{load_background, spawn_camera};
 use crate::components::general::Health;
 use crate::components::player::WeaponInventory;
 use crate::components::weapon::{CurrentWeapon, WeaponDefs};
-use crate::events::collisions::{BoidHitPlayerEvent, BulletHitBoidEvent, BulletHitPlayerEvent, BulletHitWallEvent};
-use crate::systems::collisions::{bullet_hit_boid_listener, collision_event_listener};
+use crate::events::collisions::{BoidHitPlayerEvent, BulletHitBoidEvent, BulletHitPlayerEvent, BulletHitSomethingEvent};
+use crate::systems::collisions::{bullet_hit_boid_listener, bullet_hit_something_listener, collision_started_event_listener};
 use crate::systems::input::mouse_key_input;
 use crate::systems::player::cycle_weapon_system;
 use crate::systems::shooting::shooting_system;
@@ -66,22 +66,24 @@ fn main() {
         .add_event::<BoidHitPlayerEvent>()
         .add_event::<BulletHitBoidEvent>()
         .add_event::<BulletHitPlayerEvent>()
-        .add_event::<BulletHitWallEvent>()
+        .add_event::<BulletHitSomethingEvent>()
         .add_plugins(WorldInspectorPlugin::new())
         .add_plugins(BigBrainPlugin::new(PreUpdate))
-        .add_systems(Startup, load_background)
-        .add_systems(Startup,spawn_camera)
-        .add_systems(Startup,spawn_player)
-        .add_systems(Startup,spawn_boids)
-        .add_systems(Startup,spawn_places)
-        .add_systems(Startup, add_mouse_aim_line)
+        .add_systems(Startup, (
+            load_background,
+            spawn_camera,
+            spawn_player,
+            spawn_boids,
+            spawn_places,
+            add_mouse_aim_line))
         .add_systems(Update, camera_follow)
         .add_systems(Update, keyboard_input)
         .add_systems(Update, mouse_key_input)
         .add_systems(Update, cycle_weapon_system)
         .add_systems(Update, shooting_system)
-        .add_systems(Update, collision_event_listener)
+        .add_systems(Update, collision_started_event_listener)
         .add_systems(Update, bullet_hit_boid_listener)
+        .add_systems(Update, bullet_hit_something_listener)
         .add_systems(Update, mouse_position)
         .add_systems(Update, draw_mouse_aim)
         .add_systems(Update, mouse_look)
@@ -104,7 +106,7 @@ fn main() {
 enum Layer {
     Player,
     Boid,
-    Places,
+    Place,
     Water,
     Bullet,
 }

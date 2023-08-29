@@ -27,7 +27,7 @@ pub fn shooting_system(
                     *shooter_position,
                     player_control.aim_direction * current_weapon.bullet_speed_or_zero(),
                     Collider::ball(0.5),
-                    CollisionLayers::new([Layer::Bullet], [Layer::Player, Layer::Boid]),
+                    CollisionLayers::new([Layer::Bullet], [Layer::Player, Layer::Boid, Layer::Place]),
                     shooter,
                 ),
                 SpriteBundle {
