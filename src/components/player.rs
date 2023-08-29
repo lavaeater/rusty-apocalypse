@@ -60,7 +60,7 @@ impl Default for PlayerBundle {
                 y: 0.0,
             }),
             collider: Collider::cuboid(16.0 * METERS_PER_PIXEL, 8.0 * METERS_PER_PIXEL),
-            collision_layers: CollisionLayers::new([Layer::Player], [Layer::Walls, Layer::Water]),
+            collision_layers: CollisionLayers::new([Layer::Player], [Layer::Places, Layer::Water]),
             current_weapon: CurrentWeapon {
                 weapon: None,
                 time_to_next_shot: 0.0,

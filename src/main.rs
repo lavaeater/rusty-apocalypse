@@ -102,7 +102,7 @@ fn main() {
 enum Layer {
     Player,
     Boid,
-    Walls,
+    Places,
     Water,
     Bullet,
 }
