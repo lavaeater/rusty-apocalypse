@@ -1,6 +1,6 @@
 use bevy::math::{Vec2, Vec3};
 use bevy::prelude::{AssetServer, Commands, default, Res, SpriteBundle, Transform};
-use bevy_xpbd_2d::components::{Collider, CollisionLayers, Position, RigidBody, Sensor};
+use bevy_xpbd_2d::components::{Collider, CollisionLayers, Position, RigidBody};
 use crate::components::quads::QuadCoord;
 use crate::{Layer, METERS_PER_PIXEL};
 
@@ -24,14 +24,13 @@ pub fn spawn_places(
                 texture: asset_server.load("sprites/hut.png"),
                 ..default()
             },
-            RigidBody::Kinematic,
+            RigidBody::Static,
             QuadCoord::default(),
             Position::from(Vec2 {
                 x: 20.0,
                 y: 20.0,
             }),
-            Collider::ball (32.0 * METERS_PER_PIXEL),
-            Sensor {},
+            Collider::ball(32.0 * METERS_PER_PIXEL),
             CollisionLayers::new([Layer::Places], [Layer::Player])
         ));
 }

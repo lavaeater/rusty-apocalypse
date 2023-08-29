@@ -53,7 +53,7 @@ impl Default for PlayerBundle {
             player: Player {},
             health: Health::default(),
             prey: Prey {},
-            rigid_body: RigidBody::Kinematic,
+            rigid_body: RigidBody::Dynamic,
             quad_coord: QuadCoord::default(),
             position: Position::from(Vec2 {
                 x: 0.0,
