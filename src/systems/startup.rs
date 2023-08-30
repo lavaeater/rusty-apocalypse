@@ -1,10 +1,18 @@
-use bevy::prelude::{Camera2dBundle, Commands, default, OrthographicProjection, Res, SpriteBundle, Transform};
+use bevy::prelude::{Camera2dBundle, Commands, default, OrthographicProjection, Res, ResMut, SpriteBundle, Transform};
 use bevy::asset::AssetServer;
 use bevy::math::{Rect, Vec2, Vec3};
 use bevy::core::Name;
 use bevy::render::camera::ScalingMode;
+use bevy_tts::Tts;
 use crate::components::general::GameCam;
 use crate::{CAMERA_SCALE, METERS_PER_PIXEL, PIXELS_PER_METER};
+
+pub fn setup_tts(
+    mut tts: ResMut<Tts>
+) {
+    let max_volume = tts.max_volume();
+    tts.set_volume(max_volume).unwrap();
+}
 
 pub fn load_background(
     mut commands: Commands,

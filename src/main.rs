@@ -22,11 +22,14 @@ use crate::components::general::Health;
 use crate::components::player::WeaponInventory;
 use crate::components::weapon::{CurrentWeapon, WeaponDefs};
 use crate::events::collisions::{BoidHitPlayerEvent, BulletHitBoidEvent, BulletHitPlayerEvent, BulletHitSomethingEvent};
+use crate::events::facts::{FactOccuredEvent, FactUpdatedEvent};
+use crate::resources::facts_of_the_world::FactsOfTheWorld;
 use crate::systems::collisions::{bullet_hit_boid_listener, bullet_hit_something_listener, collision_started_event_listener};
 use crate::systems::input::mouse_key_input;
 use crate::systems::player::cycle_weapon_system;
 use crate::systems::shooting::shooting_system;
-use crate::systems::things_happening::spawn_places;
+use crate::systems::startup::setup_tts;
+use crate::systems::things_happening::{fact_occured_event_listener, spawn_places};
 
 mod components;
 mod systems;
@@ -46,10 +49,12 @@ fn main() {
         .add_plugins(PhysicsPlugins::default())
         .add_plugins(ShapePlugin)
         .add_plugins(EntropyPlugin::<ChaCha8Rng>::default())
+        .add_plugins(bevy_tts::TtsPlugin)
         .insert_resource(QuadStore(HashMap::new()))
         .insert_resource(Gravity(Vec2::ZERO))
         .insert_resource(FixedTime::new_from_secs(FIXED_TIME_STEP))
         .insert_resource(WeaponDefs::default())
+        .insert_resource(FactsOfTheWorld::default())
         .insert_resource(GizmoConfig {
             depth_bias: -1.0,
             ..default()
@@ -67,9 +72,12 @@ fn main() {
         .add_event::<BulletHitBoidEvent>()
         .add_event::<BulletHitPlayerEvent>()
         .add_event::<BulletHitSomethingEvent>()
+        .add_event::<FactOccuredEvent>()
+        .add_event::<FactUpdatedEvent>()
         .add_plugins(WorldInspectorPlugin::new())
         .add_plugins(BigBrainPlugin::new(PreUpdate))
         .add_systems(Startup, (
+            setup_tts,
             load_background,
             spawn_camera,
             spawn_player,
@@ -84,6 +92,7 @@ fn main() {
         .add_systems(Update, collision_started_event_listener)
         .add_systems(Update, bullet_hit_boid_listener)
         .add_systems(Update, bullet_hit_something_listener)
+        .add_systems(Update, fact_occured_event_listener)
         .add_systems(Update, mouse_position)
         .add_systems(Update, draw_mouse_aim)
         .add_systems(Update, mouse_look)

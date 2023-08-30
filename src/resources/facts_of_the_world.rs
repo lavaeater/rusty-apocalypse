@@ -1,13 +1,13 @@
 use bevy::prelude::{Resource};
 use bevy::utils::HashMap;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Fact {
     StringFact(String),
     IntFact(i32),
     FloatFact(f32),
     BoolFact(bool),
-    ListFact(Vec<Fact>),
+    ListFact(Vec<String>),
 }
 
 pub trait Condition {
@@ -20,7 +20,6 @@ pub struct FactsOfTheWorld {
 }
 
 impl FactsOfTheWorld {
-
     pub fn default() -> Self {
         let base_facts: HashMap<String, Fact> = HashMap::new();
 
@@ -37,7 +36,7 @@ impl FactsOfTheWorld {
                     Fact::BoolFact(b) => *b,
                     _ => false,
                 }
-            },
+            }
             None => false,
         }
     }
@@ -46,7 +45,7 @@ impl FactsOfTheWorld {
         match self.facts.get(key) {
             Some(f) => {
                 f == &fact
-            },
+            }
             None => false,
         }
     }
@@ -61,14 +60,14 @@ impl FactsOfTheWorld {
                             Fact::FloatFact(j) => i as f32 > *j,
                             _ => false,
                         }
-                    },
+                    }
                     Fact::FloatFact(f) => {
                         match stored_fact {
                             Fact::IntFact(j) => f as i32 > *j,
                             Fact::FloatFact(j) => f > *j,
                             _ => false,
                         }
-                    },
+                    }
                     _ => false,
                 }
             }
@@ -76,13 +75,13 @@ impl FactsOfTheWorld {
         }
     }
 
-    pub fn contains(&self, key: &str, fact: Fact) -> bool {
+    pub fn contains(&self, key: &str, value: String) -> bool {
         match self.facts.get(key) {
             Some(stored_fact) => {
                 match stored_fact {
                     Fact::ListFact(list) => {
-                        list.contains(&fact)
-                    },
+                        list.contains(&value)
+                    }
                     _ => false,
                 }
             }
@@ -100,14 +99,14 @@ impl FactsOfTheWorld {
                             Fact::FloatFact(j) => *j > i as f32,
                             _ => false,
                         }
-                    },
+                    }
                     Fact::FloatFact(f) => {
                         match stored_fact {
                             Fact::IntFact(j) => *j > f as i32,
-                            Fact::FloatFact(j) => *j >f,
+                            Fact::FloatFact(j) => *j > f,
                             _ => false,
                         }
-                    },
+                    }
                     _ => false,
                 }
             }
@@ -119,11 +118,13 @@ impl FactsOfTheWorld {
         self.facts.get(key)
     }
 
-    pub fn store_fact(&mut self, key: &str, fact: Fact) {
-        self.facts.insert(key.to_string(), fact);
-    }
-
-    pub fn update_fact(&mut self, key: &str, fact: Fact) {
-        self.facts.insert(key.to_string(), fact);
+    pub fn update_fact(&mut self, key: &String, fact: Fact) -> bool {
+        return if self.facts.contains_key(key) {
+            self.facts.insert(key.to_string(), fact);
+            true
+        }   else {
+            self.facts.insert(key.to_string(), fact);
+            false
+        }
     }
 }
