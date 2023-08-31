@@ -214,7 +214,7 @@ pub fn hunger_scorer_system(
             // line", but that's all configurable using Pickers!
             //
             // The score here must be between 0.0 and 1.0.
-            score.set(hunger.hunger / 100.0);
+            score.set((hunger.hunger / 100.0).clamp(0.0, 1.0));
             if hunger.hunger >= 80.0 {
                 span.span().in_scope(|| {
                     debug!("Thirst above threshold! Score: {}", hunger.hunger / 100.0)
@@ -224,7 +224,7 @@ pub fn hunger_scorer_system(
     }
 }
 
-#[derive(Component, Debug, Reflect)]
+#[derive(Component, Debug, Reflect, Clone)]
 pub struct Hunger {
     pub per_second: f32,
     pub hunger: f32,

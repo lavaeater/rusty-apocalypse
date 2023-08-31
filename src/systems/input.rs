@@ -14,14 +14,13 @@ use bevy::input::mouse::MouseButtonInput;
 use crate::components::{AimLine, GameCam};
 use crate::components::control::{CycleDirection, CycleWeapon, PlayerControl, TriggerPulled};
 use crate::components::player::Player;
+use bevy::prelude::KeyCode;
 
 pub fn keyboard_input(
     mut key_evr: EventReader<KeyboardInput>,
     mut query: Query<(Entity, &mut PlayerControl), With<Player>>,
     mut commands: Commands,
 ) {
-    use bevy::input::ButtonState;
-    use bevy::prelude::KeyCode;
     if let Ok((entity, mut player_control)) = query.get_single_mut() {
         for ev in key_evr.iter() {
             match ev.state {
@@ -81,7 +80,7 @@ pub fn mouse_key_input(
     mut mouse_ev_reader: EventReader<MouseButtonInput>,
     mut query: Query<Entity, With<Player>>,
     mut commands: Commands) {
-    if let Ok((entity)) = query.get_single_mut() {
+    if let Ok(entity) = query.get_single_mut() {
         for ev in mouse_ev_reader.iter() {
             match ev.state {
                 ButtonState::Pressed => {

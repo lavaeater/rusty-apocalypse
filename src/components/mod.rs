@@ -67,8 +67,23 @@ impl QuadCoord {
     }
 }
 
+pub enum Rebuild {
+    KeepQuadSize,
+    ShrinkQuadSize,
+    GrowQuadSize,
+}
+
 #[derive(Resource)]
-pub struct QuadStore(pub HashMap<QuadCoord, HashSet<Entity>>);
+pub struct QuadStore{
+    pub entities: HashMap<QuadCoord, HashSet<Entity>>,
+    pub quad_size: f32,
+    pub max_quad_size: f32,
+    pub min_quad_size: f32,
+    pub max_entities: usize,
+    pub min_entities: usize,
+    pub largest_count: usize,
+    pub rebuild_store: Rebuild,
+}
 
 
 #[derive(Bundle, LdtkEntity)]
