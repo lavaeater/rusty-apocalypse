@@ -2,10 +2,11 @@ use bevy::prelude::{Bundle, Component, default, Reflect};
 use bevy_xpbd_2d::math::Vector2;
 use std::ops::Range;
 use bevy::core::Name;
-use bevy::math::{Vec2};
+use bevy::math::Vec2;
 use bevy_xpbd_2d::components::{Collider, CollisionLayers, Position, RigidBody};
-use crate::components::{Health, QuadCoord};
+use crate::components::general::Health;
 use crate::{Layer, METERS_PER_PIXEL};
+use crate::components::quad::QuadCoord;
 
 #[derive(Component, Clone)]
 pub struct Boid {}

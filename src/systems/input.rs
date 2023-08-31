@@ -11,10 +11,10 @@ use bevy::input::keyboard::KeyboardInput;
 use std::ops::AddAssign;
 use bevy::input::ButtonState;
 use bevy::input::mouse::MouseButtonInput;
-use crate::components::{AimLine, GameCam};
 use crate::components::control::{CycleDirection, CycleWeapon, PlayerControl, TriggerPulled};
 use crate::components::player::Player;
 use bevy::prelude::KeyCode;
+use crate::components::general::{AimLine, GameCam};
 
 pub fn keyboard_input(
     mut key_evr: EventReader<KeyboardInput>,

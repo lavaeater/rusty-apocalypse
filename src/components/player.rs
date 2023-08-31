@@ -5,9 +5,11 @@ use bevy::core::Name;
 use bevy_xpbd_2d::components::{Collider, CollisionLayers, Position, RigidBody};
 use bevy::math::Vec2;
 use bevy::reflect::Reflect;
-use crate::components::{CameraFollow, Health, Prey, QuadCoord};
+use crate::components::general::Health;
 use crate::components::control::PlayerControl;
 use crate::{Layer, METERS_PER_PIXEL};
+use crate::components::general::{CameraFollow, Prey};
+use crate::components::quad::QuadCoord;
 use crate::components::weapon::{CurrentWeapon, Weapon};
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Default, Component)]

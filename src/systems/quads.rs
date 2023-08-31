@@ -167,11 +167,11 @@ use bevy::log::info;
 use bevy::prelude::{Entity, Query, ResMut};
 use bevy::utils::HashSet;
 use bevy_xpbd_2d::components::Position;
-use crate::components::{QuadCoord, QuadStore, Rebuild};
+use crate::components::quad::{QuadCoord, QuadStore, Rebuild};
 
 pub fn naive_quad_system(
     mut query: Query<(Entity, &Position, &mut QuadCoord)>,
-    mut quad_store: ResMut<QuadStore>,
+    quad_store: ResMut<QuadStore>,
 ) {
     let mut iter = query.iter_mut();
     let quad_store = quad_store.into_inner();

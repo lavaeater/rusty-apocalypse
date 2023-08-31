@@ -4,18 +4,15 @@ use bevy::math::{Vec2, Vec3};
 use bevy::asset::AssetServer;
 use bevy_rand::prelude::GlobalEntropy;
 use rand_chacha::ChaCha8Rng;
-use big_brain::actions::Steps;
-use big_brain::prelude::Thinker;
-use big_brain::pickers::FirstToScore;
 use bevy_xpbd_2d::math::Vector2;
 use rand::Rng;
 use std::ops::AddAssign;
 use bevy::time::Time;
-use crate::components::{QuadCoord, QuadStore};
 use crate::METERS_PER_PIXEL;
-use crate::boids::ai::{AttackAndEat, FindPrey, Hunger, Hungry, Hunt};
+use crate::boids::ai::Hunger;
 use crate::boids::components::{Boid, BoidBundle, BoidDirection, BoidStuff};
 use crate::boids::resources::BoidGenerationSettings;
+use crate::components::quad::{QuadCoord, QuadStore};
 
 pub fn spawn_more_boids(
     mut commands: Commands,
